@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { createBooking, negotiate, quickLoginAs } from '../api';
 import Diya from './folk/Diya';
-import PaisleyBorder from './folk/PaisleyBorder';
+import TextileBorder from './heritage/TextileBorder';
+import HeritageDivider from './heritage/HeritageDivider';
+import CulturalMotif from './heritage/CulturalMotif';
 
 export default function BookingRequestModal({
   isOpen,
@@ -10,12 +12,15 @@ export default function BookingRequestModal({
   onBookingCreated,
   currentUser,
 }) {
+  const [step, setStep] = useState(1); // 1: Event | 2: Roles | 3: Budget & Details | 4: Summary
+
   const [organizerName, setOrganizerName] = useState(
     currentUser?.name || 'Hotel Rajmahal Heritage (fictional)'
   );
   const [eventDate, setEventDate] = useState('2026-11-20');
   const [eventTime, setEventTime] = useState('18:00');
   const [venueAddress, setVenueAddress] = useState('City Palace Courtyard, Udaipur');
+  const [distanceKm, setDistanceKm] = useState(100);
   const [budget, setBudget] = useState(30000);
   const [expectedDuration, setExpectedDuration] = useState(90);
   const [groupSize, setGroupSize] = useState(6);
@@ -48,7 +53,6 @@ export default function BookingRequestModal({
     updated[idx][field] = value;
     setRoles(updated);
 
-    // Auto-update total budget if individual role budgets change
     if (field === 'budget') {
       const total = updated.reduce((sum, r) => sum + (Number(r.budget) || 0), 0);
       setBudget(total);
@@ -76,7 +80,7 @@ export default function BookingRequestModal({
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setError(null);
 
@@ -98,7 +102,7 @@ export default function BookingRequestModal({
         event_time: eventTime,
         venue_address: venueAddress.trim(),
         budget: Number(budget),
-        distance_km: 100,
+        distance_km: Number(distanceKm) || 100,
         expected_duration_minutes: Number(expectedDuration),
         duration_minutes: Number(expectedDuration),
         group_size: Number(groupSize),
@@ -134,68 +138,76 @@ export default function BookingRequestModal({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(31, 26, 20, 0.75)',
+        backgroundColor: 'rgba(27, 37, 75, 0.78)',
+        backdropFilter: 'blur(6px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 1000,
+        zIndex: 1060,
         padding: '16px',
       }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="booking-modal-title"
     >
       <div
         style={{
           backgroundColor: '#FFFDF9',
-          border: '3px solid #8B2500',
-          borderRadius: '12px',
+          border: '3px solid #6B1717',
+          borderRadius: '16px',
           width: '100%',
-          maxWidth: '680px',
-          maxHeight: '90vh',
+          maxWidth: '740px',
+          maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.3)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
           fontFamily: "'Noto Sans', sans-serif",
           color: '#1F1A14',
-          fontSize: '16px',
+          position: 'relative',
         }}
       >
-        <PaisleyBorder />
-        <div style={{ padding: '24px' }}>
+        <TextileBorder height={16} />
+
+        <div style={{ padding: '24px 30px' }}>
           {/* Header */}
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '2px dashed #D97706',
-              paddingBottom: '14px',
-              marginBottom: '18px',
+              borderBottom: '2px solid #E8DCCB',
+              paddingBottom: '16px',
+              marginBottom: '20px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Diya />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <CulturalMotif name="dancer" size={34} />
               <div>
                 <h2
+                  id="booking-modal-title"
                   style={{
                     fontFamily: "'Yatra One', cursive",
-                    fontSize: '24px',
-                    color: '#8B2500',
+                    fontSize: '26px',
+                    color: '#6B1717',
                     margin: 0,
                   }}
                 >
                   Create Booking Request
                 </h2>
-                <div style={{ fontSize: '14px', color: '#6B5E4F', marginTop: '2px' }}>
-                  AI multi-agent negotiation with strict venue privacy
+                <div style={{ fontSize: '13.5px', color: '#6B5E4F', marginTop: '2px' }}>
+                  AI-assisted fair wage negotiation for authentic living traditions
                 </div>
               </div>
             </div>
+
             <button
+              type="button"
               onClick={onClose}
               style={{
                 background: 'transparent',
                 border: 'none',
-                fontSize: '22px',
+                fontSize: '24px',
                 cursor: 'pointer',
-                color: '#8B2500',
+                color: '#6B1717',
                 fontWeight: 'bold',
                 padding: '4px 8px',
               }}
@@ -204,62 +216,198 @@ export default function BookingRequestModal({
             </button>
           </div>
 
+          {/* Textile-Inspired Multi-Step Indicator */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '8px',
+              marginBottom: '24px',
+            }}
+          >
+            {[
+              { num: 1, label: 'Event Details' },
+              { num: 2, label: 'Performers & Roles' },
+              { num: 3, label: 'Budget & Terms' },
+              { num: 4, label: 'Review & Submit' },
+            ].map((s) => (
+              <button
+                key={s.num}
+                type="button"
+                onClick={() => setStep(s.num)}
+                style={{
+                  padding: '10px 8px',
+                  borderRadius: '8px',
+                  border: '1.5px solid',
+                  borderColor: step === s.num ? '#6B1717' : step > s.num ? '#15803D' : '#E8DCCB',
+                  backgroundColor: step === s.num ? '#FFFBEB' : step > s.num ? '#ECFDF5' : '#FFFFFF',
+                  color: step === s.num ? '#6B1717' : step > s.num ? '#15803D' : '#6B7280',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                }}
+              >
+                <div>0{s.num}</div>
+                <div style={{ fontSize: '11.5px', marginTop: '2px' }}>{s.label}</div>
+              </button>
+            ))}
+          </div>
+
           {error && (
             <div
               style={{
                 backgroundColor: '#FEF2F2',
-                border: '2px solid #DC2626',
+                border: '2px solid #EF4444',
                 borderRadius: '8px',
-                padding: '12px',
+                padding: '12px 16px',
                 color: '#991B1B',
-                marginBottom: '16px',
+                marginBottom: '18px',
               }}
             >
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit}>
-            {/* Roles Needed Section */}
-            <div
-              style={{
-                backgroundColor: '#FFFFFF',
-                padding: '16px',
-                borderRadius: '8px',
-                border: '2px solid #C4A482',
-                marginBottom: '18px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '12px',
-                }}
-              >
-                <h4
+          {/* STEP 1: EVENT DETAILS */}
+          {step === 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                  Organizer / Organization Name
+                </label>
+                <input
+                  type="text"
+                  value={organizerName}
+                  onChange={(e) => setOrganizerName(e.target.value)}
                   style={{
-                    margin: 0,
-                    color: '#8B2500',
-                    fontSize: '18px',
-                    fontFamily: "'Yatra One', cursive",
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: '15px',
+                    border: '1.5px solid var(--dh-border-heritage)',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
                   }}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                    Event Date
+                  </label>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '15px',
+                      border: '1.5px solid var(--dh-border-heritage)',
+                      borderRadius: '8px',
+                      backgroundColor: '#FFFFFF',
+                    }}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                    Event Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '15px',
+                      border: '1.5px solid var(--dh-border-heritage)',
+                      borderRadius: '8px',
+                      backgroundColor: '#FFFFFF',
+                    }}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                  Venue Address (Protected until payment confirmation)
+                </label>
+                <input
+                  type="text"
+                  value={venueAddress}
+                  onChange={(e) => setVenueAddress(e.target.value)}
+                  placeholder="e.g. City Palace Courtyard, Udaipur"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: '15px',
+                    border: '1.5px solid var(--dh-border-heritage)',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                  required
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                  Travel Distance from Artist Hub (km)
+                </label>
+                <input
+                  type="number"
+                  min="10"
+                  max="600"
+                  value={distanceKm}
+                  onChange={(e) => setDistanceKm(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: '15px',
+                    border: '1.5px solid var(--dh-border-heritage)',
+                    borderRadius: '8px',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="folk-btn-primary"
+                  onClick={() => setStep(2)}
+                  style={{ padding: '10px 24px', fontSize: '15px' }}
                 >
-                  Roles Needed
-                </h4>
+                  Next: Roles &amp; Requirements →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2: ROLES & REQUIREMENTS */}
+          {step === 2 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#6B1717' }}>
+                  Required Troupe Roles ({roles.length})
+                </span>
                 <button
                   type="button"
                   onClick={handleAddRole}
                   style={{
-                    backgroundColor: '#ECFDF5',
-                    border: '1px solid #166534',
-                    color: '#166534',
+                    background: '#FAF5EE',
+                    border: '1px solid #C4A482',
+                    padding: '4px 10px',
                     borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    fontWeight: 600,
                     cursor: 'pointer',
+                    color: '#6B1717',
                   }}
                 >
                   + Add Role
@@ -270,61 +418,64 @@ export default function BookingRequestModal({
                 <div
                   key={idx}
                   style={{
-                    display: 'flex',
+                    background: '#FFFFFF',
+                    border: '1.5px solid #E8DCCB',
+                    borderRadius: '10px',
+                    padding: '14px',
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1.2fr 1fr auto',
                     gap: '10px',
                     alignItems: 'center',
-                    marginBottom: '10px',
-                    backgroundColor: '#FDFBF7',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    border: '1px solid #E5D5C5',
-                    flexWrap: 'wrap',
                   }}
                 >
-                  <input
-                    type="text"
-                    required
-                    value={r.role}
-                    onChange={(e) => handleRoleChange(idx, 'role', e.target.value)}
-                    placeholder="Role Title"
-                    style={{
-                      flex: '1 1 120px',
-                      padding: '8px 10px',
-                      fontSize: '15px',
-                      border: '1px solid #C4A482',
-                      borderRadius: '4px',
-                    }}
-                  />
-                  <input
-                    type="text"
-                    required
-                    value={r.art_form}
-                    onChange={(e) => handleRoleChange(idx, 'art_form', e.target.value)}
-                    placeholder="Art Form"
-                    style={{
-                      flex: '1 1 160px',
-                      padding: '8px 10px',
-                      fontSize: '15px',
-                      border: '1px solid #C4A482',
-                      borderRadius: '4px',
-                    }}
-                  />
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold' }}>₹</span>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#6B5E4F', textTransform: 'uppercase' }}>
+                      Role Title
+                    </label>
+                    <input
+                      type="text"
+                      value={r.role}
+                      onChange={(e) => handleRoleChange(idx, 'role', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        fontSize: '13.5px',
+                        border: '1px solid #C4A482',
+                        borderRadius: '6px',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#6B5E4F', textTransform: 'uppercase' }}>
+                      Art Form
+                    </label>
+                    <input
+                      type="text"
+                      value={r.art_form}
+                      onChange={(e) => handleRoleChange(idx, 'art_form', e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        fontSize: '13.5px',
+                        border: '1px solid #C4A482',
+                        borderRadius: '6px',
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#6B5E4F', textTransform: 'uppercase' }}>
+                      Allocated (₹)
+                    </label>
                     <input
                       type="number"
-                      required
-                      min={1000}
-                      step={500}
                       value={r.budget}
-                      onChange={(e) => handleRoleChange(idx, 'budget', Number(e.target.value))}
-                      placeholder="Budget"
+                      onChange={(e) => handleRoleChange(idx, 'budget', e.target.value)}
                       style={{
-                        width: '90px',
-                        padding: '8px 10px',
-                        fontSize: '15px',
+                        width: '100%',
+                        padding: '6px 8px',
+                        fontSize: '13.5px',
                         border: '1px solid #C4A482',
-                        borderRadius: '4px',
+                        borderRadius: '6px',
                       }}
                     />
                   </div>
@@ -333,260 +484,247 @@ export default function BookingRequestModal({
                       type="button"
                       onClick={() => handleRemoveRole(idx)}
                       style={{
-                        background: 'transparent',
-                        border: 'none',
+                        background: '#FEF2F2',
                         color: '#DC2626',
-                        fontSize: '18px',
+                        border: 'none',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
                         cursor: 'pointer',
-                        padding: '4px 8px',
+                        marginTop: '16px',
                       }}
                     >
-                      🗑️
+                      ✕
                     </button>
                   )}
                 </div>
               ))}
-            </div>
 
-            {/* Event Date, Time & Expected Duration */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-                gap: '14px',
-                marginBottom: '16px',
-              }}
-            >
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                  Event Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '16px',
-                    border: '2px solid #C4A482',
-                    borderRadius: '6px',
-                    boxSizing: 'border-box',
-                  }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '6px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                    Performance Duration (mins)
+                  </label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="360"
+                    value={expectedDuration}
+                    onChange={(e) => setExpectedDuration(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '15px',
+                      border: '1.5px solid var(--dh-border-heritage)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                    Expected Group Size
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={groupSize}
+                    onChange={(e) => setGroupSize(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      fontSize: '15px',
+                      border: '1.5px solid var(--dh-border-heritage)',
+                      borderRadius: '8px',
+                    }}
+                  />
+                </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                  Event Time *
-                </label>
-                <input
-                  type="time"
-                  required
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '16px',
-                    border: '2px solid #C4A482',
-                    borderRadius: '6px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                  Duration (Mins) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={30}
-                  step={15}
-                  value={expectedDuration}
-                  onChange={(e) => setExpectedDuration(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '16px',
-                    border: '2px solid #C4A482',
-                    borderRadius: '6px',
-                    boxSizing: 'border-box',
-                  }}
-                />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="folk-btn-secondary"
+                  onClick={() => setStep(1)}
+                  style={{ padding: '10px 20px', fontSize: '15px' }}
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  className="folk-btn-primary"
+                  onClick={() => setStep(3)}
+                  style={{ padding: '10px 24px', fontSize: '15px' }}
+                >
+                  Next: Budget &amp; Notes →
+                </button>
               </div>
             </div>
+          )}
 
-            {/* Total Budget & Group Size */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '14px',
-                marginBottom: '16px',
-              }}
-            >
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                  Total Budget (₹ INR) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1000}
-                  step={500}
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '16px',
-                    border: '2px solid #C4A482',
-                    borderRadius: '6px',
-                    boxSizing: 'border-box',
-                    fontWeight: 'bold',
-                    color: '#8B2500',
-                  }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                  Expected Group Size (Artists) *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  max={100}
-                  value={groupSize}
-                  onChange={(e) => setGroupSize(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    fontSize: '16px',
-                    border: '2px solid #C4A482',
-                    borderRadius: '6px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Venue Address with Privacy Notice */}
-            <div style={{ marginBottom: '16px' }}>
+          {/* STEP 3: BUDGET & NOTES */}
+          {step === 3 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div
                 style={{
+                  background: '#FFF8E7',
+                  border: '2px dashed #C69214',
+                  borderRadius: '12px',
+                  padding: '18px',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'baseline',
-                  marginBottom: '6px',
+                  alignItems: 'center',
                 }}
               >
-                <label style={{ fontWeight: 'bold' }}>Venue Address *</label>
-                <span style={{ fontSize: '13px', color: '#B45309', fontWeight: 'bold' }}>
-                  🔒 Hidden from artists until payment
-                </span>
+                <div>
+                  <div style={{ fontSize: '13px', color: '#8D5B18', fontWeight: 700, textTransform: 'uppercase' }}>
+                    Total Budget Ceiling
+                  </div>
+                  <div style={{ fontFamily: "'Yatra One', cursive", fontSize: '28px', color: '#B84220' }}>
+                    ₹{Number(budget).toLocaleString('en-IN')}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6B5E4F' }}>
+                    Sum of all roles with AI fair wage tolerance
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontSize: '12.5px', color: '#15803D', fontWeight: 600 }}>
+                    🛡️ Protected by TrustPay
+                  </span>
+                </div>
               </div>
-              <textarea
-                required
-                rows={2}
-                value={venueAddress}
-                onChange={(e) => setVenueAddress(e.target.value)}
-                placeholder="Exact venue address and landmark..."
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  fontSize: '16px',
-                  border: '2px solid #C4A482',
-                  borderRadius: '6px',
-                  boxSizing: 'border-box',
-                  fontFamily: "'Noto Sans', sans-serif",
-                }}
-              />
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 700, marginBottom: '6px', color: '#334155' }}>
+                  Special Notes or Stage Instructions
+                </label>
+                <textarea
+                  rows="4"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Outdoor royal courtyard performance, sound setup provided, stage size 24x16 ft..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    fontSize: '14.5px',
+                    border: '1.5px solid var(--dh-border-heritage)',
+                    borderRadius: '8px',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="folk-btn-secondary"
+                  onClick={() => setStep(2)}
+                  style={{ padding: '10px 20px', fontSize: '15px' }}
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  className="folk-btn-primary"
+                  onClick={() => setStep(4)}
+                  style={{ padding: '10px 24px', fontSize: '15px' }}
+                >
+                  Next: Final Review →
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 4: REVIEW & SUBMIT */}
+          {step === 4 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div
                 style={{
-                  fontSize: '13px',
-                  color: '#6B5E4F',
-                  marginTop: '4px',
-                  backgroundColor: '#FFFBEB',
-                  padding: '6px 10px',
-                  borderRadius: '4px',
-                  border: '1px solid #FDE68A',
+                  background: '#FFFFFF',
+                  border: '2px solid #C4A482',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  boxShadow: 'var(--shadow-sm)',
                 }}
               >
-                🛡️ Dharohar Privacy Policy: Venue and contact details are masked during negotiation
-                and only revealed once escrow deposit is confirmed.
+                <h4 style={{ margin: '0 0 12px', fontFamily: "'Yatra One', cursive", fontSize: '20px', color: '#6B1717' }}>
+                  Booking Summary
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Organizer:</span> <strong>{organizerName}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Event Date:</span> <strong>{eventDate} at {eventTime}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Venue:</span> <strong>{venueAddress}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Distance:</span> <strong>{distanceKm} km</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Duration:</span> <strong>{expectedDuration} minutes</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6B5E4F' }}>Group Size:</span> <strong>{groupSize} artists</strong>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px dashed #E8DCCB', marginTop: '14px', paddingTop: '12px' }}>
+                  <div style={{ fontSize: '13px', color: '#6B5E4F', marginBottom: '6px' }}>
+                    <strong>Requested Roles:</strong>
+                  </div>
+                  {roles.map((r, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px', marginBottom: '4px' }}>
+                      <span>{r.role} ({r.art_form})</span>
+                      <strong style={{ color: '#B84220' }}>₹{Number(r.budget).toLocaleString('en-IN')}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: '#EFF6FF',
+                  border: '1.5px solid #BFDBFE',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  fontSize: '13px',
+                  color: '#1E3A8A',
+                }}
+              >
+                🤖 <strong>AI Negotiation Flow:</strong> Submitting will create this booking and immediately launch dual-agent negotiation between your representative and the artists to finalize pricing and standbys.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  className="folk-btn-secondary"
+                  onClick={() => setStep(3)}
+                  disabled={loading}
+                  style={{ padding: '10px 20px', fontSize: '15px' }}
+                >
+                  ← Back
+                </button>
+                <button
+                  type="button"
+                  className="folk-btn-primary"
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  style={{
+                    padding: '12px 28px',
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 16px rgba(184, 66, 32, 0.3)',
+                  }}
+                >
+                  {loading ? 'Submitting & Launching AI...' : 'Submit Request & Launch AI Negotiation'}
+                </button>
               </div>
             </div>
-
-            {/* Special Instructions / Notes */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px' }}>
-                Special Notes / Requirements
-              </label>
-              <textarea
-                rows={2}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Stage lighting setup, acoustic preferences, arrival timeline..."
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  fontSize: '16px',
-                  border: '2px solid #C4A482',
-                  borderRadius: '6px',
-                  boxSizing: 'border-box',
-                  fontFamily: "'Noto Sans', sans-serif",
-                }}
-              />
-            </div>
-
-            {/* Actions */}
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '12px',
-                borderTop: '1px solid #E5D5C5',
-                paddingTop: '16px',
-              }}
-            >
-              <button
-                type="button"
-                onClick={onClose}
-                style={{
-                  padding: '10px 18px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#F3EDE4',
-                  border: '2px solid #C4A482',
-                  borderRadius: '6px',
-                  color: '#4A3E31',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  padding: '10px 24px',
-                  fontSize: '16px',
-                  fontWeight: 'bold',
-                  backgroundColor: '#8B2500',
-                  border: '2px solid #5A1800',
-                  borderRadius: '6px',
-                  color: '#FFFFFF',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                }}
-              >
-                {loading ? 'Initiating Negotiation...' : 'Submit & Start Negotiation'}
-              </button>
-            </div>
-          </form>
+          )}
         </div>
       </div>
     </div>

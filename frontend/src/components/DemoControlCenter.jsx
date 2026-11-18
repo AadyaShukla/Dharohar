@@ -14,7 +14,8 @@ import {
   getBooking,
 } from '../api';
 import Diya from './folk/Diya';
-import PaisleyBorder from './folk/PaisleyBorder';
+import TextileBorder from './heritage/TextileBorder';
+import CulturalMotif from './heritage/CulturalMotif';
 
 export default function DemoControlCenter({
   onBookingSelected,
@@ -58,7 +59,7 @@ export default function DemoControlCenter({
     setErrorMsg(null);
     try {
       const res = await seed();
-      setStatusMsg(`✓ Database wiped and freshly seeded with ${res.count || 10} authentic folk artists.`);
+      setStatusMsg(`✓ Database wiped and freshly seeded with ${res.count || 10} authentic folk artists and baseline accounts.`);
     } catch (err) {
       setErrorMsg(`Reset failed: ${err.message}`);
     } finally {
@@ -77,9 +78,7 @@ export default function DemoControlCenter({
       const bId = demoRes.booking_id;
       if (onBookingSelected) onBookingSelected(bId);
 
-      // Approve for Kalbelia Dance
       await artistApprove(bId, 'dance_kalbelia_01').catch(() => {});
-      // Deposit simulated escrow
       await pay(bId).catch(() => {});
 
       setStatusMsg(
@@ -135,7 +134,46 @@ export default function DemoControlCenter({
     }
   }
 
-  // 3. Scenario: Advance Time (Simulate Performance Day)
+  // 3. Scenario: Lowball Negotiation Resistance
+  async function runLowballScenario() {
+    setLoading(true);
+    setActiveScenario('lowball');
+    setStatusMsg(null);
+    setErrorMsg(null);
+    try {
+      const payload = {
+        organizer_name: 'Corporate Gala (Simulated Low Budget)',
+        event_date: '2026-12-15',
+        event_time: '20:00',
+        venue_address: 'Grand Hyatt Convention Hall, Udaipur',
+        budget: 5000, // Deliberately below Kalbelia min fee of ₹12,000
+        distance_km: 120,
+        expected_duration_minutes: 120,
+        duration_minutes: 120,
+        group_size: 8,
+        notes: 'Seeking 8 artists for 2 hours on low budget.',
+        roles: [
+          { role: 'Dance Troupe', art_form: 'Kalbelia Dance', budget: 5000 },
+        ],
+      };
+
+      const newBooking = await createBooking(payload);
+      const negResult = await negotiate(newBooking.id);
+      if (onBookingSelected) onBookingSelected(newBooking.id);
+
+      setStatusMsg(
+        `✓ Fair-Wage Safeguard Demonstrated! Booking #${newBooking.id} received lowball ₹5,000 offer. Artist Representative Agent rejected the predatory fee to protect rural livelihood.`
+      );
+      if (onSwitchTab) onSwitchTab('organizer');
+    } catch (err) {
+      setErrorMsg(`Lowball Scenario error: ${err.message}`);
+    } finally {
+      setLoading(false);
+      setActiveScenario(null);
+    }
+  }
+
+  // 4. Scenario: Advance Time (Simulate Performance Day)
   async function handleAdvanceTime() {
     setLoading(true);
     setStatusMsg(null);
@@ -150,7 +188,7 @@ export default function DemoControlCenter({
     }
   }
 
-  // 4. Scenario: Simulate Escrow Payout Failure (Operator Ticket Trigger)
+  // 5. Scenario: Simulate Escrow Payout Failure (Operator Ticket Trigger)
   async function handleSimulatePayoutFailure() {
     setLoading(true);
     setStatusMsg(null);
@@ -170,44 +208,43 @@ export default function DemoControlCenter({
   return (
     <div
       style={{
-        maxWidth: '1080px',
+        maxWidth: '1180px',
         margin: '0 auto',
-        padding: '24px 16px',
+        padding: '24px 16px 48px',
         fontFamily: "'Noto Sans', sans-serif",
-        color: '#1F1A14',
       }}
     >
-      {/* Header */}
+      {/* Header Bar */}
       <div
         style={{
           background: '#FFFDF9',
-          border: '2px solid #C4A482',
-          borderRadius: '12px',
-          padding: '20px',
+          border: '2px solid var(--dh-border-heritage)',
+          borderRadius: '16px',
+          padding: '20px 24px',
           marginBottom: '24px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '14px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+          gap: '16px',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <Diya size={42} animated />
+          <Diya size={40} animated />
           <div>
             <h1
               style={{
                 fontFamily: "'Yatra One', cursive",
                 fontSize: '28px',
-                color: '#8B2500',
+                color: '#6B1717',
                 margin: 0,
               }}
             >
-              Demo Control Center & Test Harness
+              Demo Control Center &amp; Test Suite
             </h1>
             <p style={{ margin: '4px 0 0', color: '#6B5E4F', fontSize: '15px' }}>
-              Run deterministic end-to-end scenarios, toggle AI engines, and test edge conditions.
+              Deterministic showcase runner for judges, evaluators, and system auditors.
             </p>
           </div>
         </div>
@@ -222,26 +259,28 @@ export default function DemoControlCenter({
             color: '#DC2626',
             padding: '10px 18px',
             borderRadius: '8px',
-            fontSize: '15px',
+            fontSize: '14.5px',
             fontWeight: 'bold',
             cursor: loading ? 'wait' : 'pointer',
           }}
         >
-          🔄 Reset Database & Seed
+          🔄 Reset Database &amp; Seed
         </button>
       </div>
+
+      <TextileBorder height={16} />
 
       {/* Status Notifications */}
       {statusMsg && (
         <div
           style={{
             backgroundColor: '#ECFDF5',
-            border: '2px solid #10B981',
-            borderRadius: '8px',
+            border: '1.5px solid #10B981',
+            borderRadius: '10px',
             padding: '14px 18px',
             color: '#065F46',
             fontWeight: 600,
-            marginBottom: '20px',
+            margin: '20px 0',
             fontSize: '15px',
           }}
         >
@@ -253,12 +292,12 @@ export default function DemoControlCenter({
         <div
           style={{
             backgroundColor: '#FEF2F2',
-            border: '2px solid #EF4444',
-            borderRadius: '8px',
+            border: '1.5px solid #EF4444',
+            borderRadius: '10px',
             padding: '14px 18px',
             color: '#991B1B',
             fontWeight: 600,
-            marginBottom: '20px',
+            margin: '20px 0',
             fontSize: '15px',
           }}
         >
@@ -272,27 +311,27 @@ export default function DemoControlCenter({
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
           gap: '24px',
-          marginBottom: '28px',
+          margin: '24px 0 32px',
         }}
       >
-        {/* Panel 1: AI Provider Selection */}
+        {/* Panel 1: AI Negotiation Provider */}
         <div
           style={{
             background: '#FFFFFF',
-            border: '2px solid #C4A482',
+            border: '2px solid var(--dh-border-heritage)',
             borderRadius: '12px',
             padding: '22px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <span style={{ fontSize: '24px' }}>🤖</span>
-            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '20px', color: '#8B2500', margin: 0 }}>
+            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '20px', color: '#6B1717', margin: 0 }}>
               AI Negotiation Engine
             </h3>
           </div>
           <p style={{ fontSize: '14px', color: '#6B5E4F', margin: '0 0 16px' }}>
-            Select whether multi-agent negotiation executes via deterministic script or live Gemini LLM.
+            Toggle between the deterministic offline test engine and live Google Gemini AI.
           </p>
 
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -303,18 +342,19 @@ export default function DemoControlCenter({
               style={{
                 flex: 1,
                 padding: '10px 14px',
-                fontSize: '15px',
+                fontSize: '14px',
                 fontWeight: 'bold',
                 borderRadius: '8px',
                 border: '2px solid',
-                borderColor: provider === 'scripted' ? '#8B2500' : '#D1C7BD',
-                backgroundColor: provider === 'scripted' ? '#8B2500' : '#FAF5EE',
+                borderColor: provider === 'scripted' ? '#6B1717' : '#D1C7BD',
+                backgroundColor: provider === 'scripted' ? '#6B1717' : '#FAF5EE',
                 color: provider === 'scripted' ? '#FFFFFF' : '#4A3E31',
                 cursor: 'pointer',
               }}
             >
               ✓ Scripted (Deterministic)
             </button>
+
             <button
               type="button"
               onClick={() => handleToggleProvider('gemini')}
@@ -322,12 +362,12 @@ export default function DemoControlCenter({
               style={{
                 flex: 1,
                 padding: '10px 14px',
-                fontSize: '15px',
+                fontSize: '14px',
                 fontWeight: 'bold',
                 borderRadius: '8px',
                 border: '2px solid',
-                borderColor: provider !== 'scripted' ? '#8B2500' : '#D1C7BD',
-                backgroundColor: provider !== 'scripted' ? '#8B2500' : '#FAF5EE',
+                borderColor: provider !== 'scripted' ? '#6B1717' : '#D1C7BD',
+                backgroundColor: provider !== 'scripted' ? '#6B1717' : '#FAF5EE',
                 color: provider !== 'scripted' ? '#FFFFFF' : '#4A3E31',
                 cursor: 'pointer',
               }}
@@ -337,20 +377,20 @@ export default function DemoControlCenter({
           </div>
         </div>
 
-        {/* Panel 2: Simulation Controls */}
+        {/* Panel 2: Simulation & Fault Injection */}
         <div
           style={{
             background: '#FFFFFF',
-            border: '2px solid #C4A482',
+            border: '2px solid var(--dh-border-heritage)',
             borderRadius: '12px',
             padding: '22px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
             <span style={{ fontSize: '24px' }}>⏱️</span>
-            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '20px', color: '#8B2500', margin: 0 }}>
-              Time & Fault Simulation
+            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '20px', color: '#6B1717', margin: 0 }}>
+              Time &amp; Fault Simulation
             </h3>
           </div>
           <p style={{ fontSize: '14px', color: '#6B5E4F', margin: '0 0 16px' }}>
@@ -365,10 +405,10 @@ export default function DemoControlCenter({
               style={{
                 flex: 1,
                 padding: '10px 14px',
-                fontSize: '14px',
+                fontSize: '13.5px',
                 fontWeight: 'bold',
                 borderRadius: '8px',
-                border: '1px solid #C4A482',
+                border: '1.5px solid #C4A482',
                 backgroundColor: '#FAF5EE',
                 color: '#4A3E31',
                 cursor: 'pointer',
@@ -384,10 +424,10 @@ export default function DemoControlCenter({
               style={{
                 flex: 1,
                 padding: '10px 14px',
-                fontSize: '14px',
+                fontSize: '13.5px',
                 fontWeight: 'bold',
                 borderRadius: '8px',
-                border: '1px solid #D97706',
+                border: '1.5px solid #D97706',
                 backgroundColor: '#FFFBEB',
                 color: '#B45309',
                 cursor: 'pointer',
@@ -399,40 +439,40 @@ export default function DemoControlCenter({
         </div>
       </div>
 
-      {/* Pre-Built Deterministic Scenarios */}
+      {/* Pre-Built Presentation Scenarios */}
       <div
         style={{
           background: '#FFFDF9',
-          border: '2px solid #C4A482',
-          borderRadius: '12px',
-          padding: '24px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+          border: '2px solid var(--dh-border-heritage)',
+          borderRadius: '16px',
+          padding: '28px',
+          boxShadow: 'var(--shadow-md)',
         }}
       >
         <h3
           style={{
             fontFamily: "'Yatra One', cursive",
-            fontSize: '22px',
-            color: '#8B2500',
-            margin: '0 0 16px',
+            fontSize: '24px',
+            color: '#6B1717',
+            margin: '0 0 18px',
           }}
         >
-          Pre-Built Deterministic Scenarios
+          Curated Presentation Scenarios
         </h3>
 
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '18px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '20px',
           }}
         >
-          {/* Scenario 1 */}
+          {/* Card 1: Happy Path */}
           <div
             style={{
-              border: '1px solid #E5D5C5',
-              borderRadius: '8px',
-              padding: '16px',
+              border: '1.5px solid #E8DCCB',
+              borderRadius: '10px',
+              padding: '18px',
               background: '#FFFFFF',
               display: 'flex',
               flexDirection: 'column',
@@ -440,12 +480,12 @@ export default function DemoControlCenter({
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '20px' }}>🎯</span>
-                <strong style={{ fontSize: '16px', color: '#8B2500' }}>Full Happy Path (Dec 20)</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px' }}>🎯</span>
+                <strong style={{ fontSize: '17px', color: '#6B1717' }}>Full Happy Path (Dec 20)</strong>
               </div>
-              <p style={{ fontSize: '13px', color: '#6B5E4F', margin: '0 0 12px' }}>
-                Hotel Rajmahal creates booking &rarr; Kalbelia Dance &amp; Manganiyar Music matched &rarr; artists approve &rarr; ₹25,000 funded in TrustPay escrow.
+              <p style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: 1.5, margin: '0 0 16px' }}>
+                Hotel Rajmahal creates booking &rarr; Kalbelia Dance &amp; Manganiyar Music matched &rarr; artists approve &rarr; ₹25,000 deposited in TrustPay escrow.
               </p>
             </div>
             <button
@@ -453,18 +493,18 @@ export default function DemoControlCenter({
               className="folk-btn-primary"
               onClick={runHappyPathScenario}
               disabled={loading}
-              style={{ width: '100%', padding: '8px 12px', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
             >
               {activeScenario === 'happy_path' ? 'Executing...' : 'Run Happy Path'}
             </button>
           </div>
 
-          {/* Scenario 2 */}
+          {/* Card 2: Multi-Role Extravaganza */}
           <div
             style={{
-              border: '1px solid #E5D5C5',
-              borderRadius: '8px',
-              padding: '16px',
+              border: '1.5px solid #E8DCCB',
+              borderRadius: '10px',
+              padding: '18px',
               background: '#FFFFFF',
               display: 'flex',
               flexDirection: 'column',
@@ -472,12 +512,12 @@ export default function DemoControlCenter({
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '20px' }}>🎭</span>
-                <strong style={{ fontSize: '16px', color: '#8B2500' }}>Multi-Role Extravaganza</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px' }}>🎭</span>
+                <strong style={{ fontSize: '17px', color: '#6B1717' }}>Multi-Role Extravaganza</strong>
               </div>
-              <p style={{ fontSize: '13px', color: '#6B5E4F', margin: '0 0 12px' }}>
-                Jaipur Lit Fest requests 3 roles: Ghoomar Dance, Manganiyar Ensemble & Kathputli Puppets (₹45,000 budget).
+              <p style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: 1.5, margin: '0 0 16px' }}>
+                Jaipur Lit Fest requests 3 roles: Ghoomar Dance, Manganiyar Ensemble &amp; Kathputli Puppets (₹45,000 budget).
               </p>
             </div>
             <button
@@ -485,18 +525,18 @@ export default function DemoControlCenter({
               className="folk-btn-primary"
               onClick={runMultiRoleScenario}
               disabled={loading}
-              style={{ width: '100%', padding: '8px 12px', fontSize: '14px' }}
+              style={{ width: '100%', padding: '10px 14px', fontSize: '14px' }}
             >
               {activeScenario === 'multi_role' ? 'Executing...' : 'Run Multi-Role'}
             </button>
           </div>
 
-          {/* Scenario 3 */}
+          {/* Card 3: Fair Wage Safeguard (Lowball Rejection) */}
           <div
             style={{
-              border: '1px solid #E5D5C5',
-              borderRadius: '8px',
-              padding: '16px',
+              border: '1.5px solid #E8DCCB',
+              borderRadius: '10px',
+              padding: '18px',
               background: '#FFFFFF',
               display: 'flex',
               flexDirection: 'column',
@@ -504,21 +544,22 @@ export default function DemoControlCenter({
             }}
           >
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                <span style={{ fontSize: '20px' }}>📜</span>
-                <strong style={{ fontSize: '16px', color: '#8B2500' }}>Audit & Replay Inspection</strong>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{ fontSize: '22px' }}>🛡️</span>
+                <strong style={{ fontSize: '17px', color: '#6B1717' }}>Fair-Wage Safeguard</strong>
               </div>
-              <p style={{ fontSize: '13px', color: '#6B5E4F', margin: '0 0 12px' }}>
-                Inspect immutable cryptographic event stream, SHA-256 payload hashes, and state transitions for any active booking.
+              <p style={{ fontSize: '13.5px', color: '#4B5563', lineHeight: 1.5, margin: '0 0 16px' }}>
+                Organizer submits ₹5,000 for 8 dancers. The Artist AI automatically rejects the lowball bid and enforces village minimum.
               </p>
             </div>
             <button
               type="button"
               className="folk-btn-secondary"
-              onClick={() => onSwitchTab && onSwitchTab('audit')}
-              style={{ width: '100%', padding: '8px 12px', fontSize: '14px' }}
+              onClick={runLowballScenario}
+              disabled={loading}
+              style={{ width: '100%', padding: '10px 14px', fontSize: '14px', borderColor: '#B84220', color: '#B84220' }}
             >
-              Open Audit Log
+              {activeScenario === 'lowball' ? 'Evaluating...' : 'Test Lowball Rejection'}
             </button>
           </div>
         </div>

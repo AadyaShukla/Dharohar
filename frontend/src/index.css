@@ -1078,3 +1078,279 @@ button:hover .ghungroo-icon {
   color: var(--color-dark-maroon);
 }
 
+
+/* ==========================================================================
+   Dharohar Premium Redesign — Component & Workspace Layout Styles
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. AI Negotiation 3-Column Workspace
+   -------------------------------------------------------------------------- */
+.negotiation-workspace-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(380px, 1fr) 300px;
+  gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .negotiation-workspace-grid {
+    grid-template-columns: 280px 1fr;
+  }
+  .negotiation-intel-sidebar {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 768px) {
+  .negotiation-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+  .negotiation-intel-sidebar {
+    grid-column: span 1;
+  }
+}
+
+.negotiation-context-sidebar,
+.negotiation-intel-sidebar {
+  background: var(--dh-paper-card);
+  border: 2px solid var(--dh-border-heritage);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  position: sticky;
+  top: 20px;
+}
+
+.negotiation-chat-center {
+  background: #FFFFFF;
+  border: 2px solid var(--dh-maroon);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+  overflow: hidden;
+  position: relative;
+}
+
+.negotiation-chat-header {
+  padding: 16px 20px;
+  background: linear-gradient(180deg, var(--dh-cream) 0%, #FFFFFF 100%);
+  border-bottom: 2px solid var(--dh-border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.negotiation-chat-feed {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: radial-gradient(var(--dh-sand) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Agent Message Identities */
+.chat-bubble {
+  max-width: 85%;
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  animation: fadeInRise 250ms ease-out;
+  position: relative;
+}
+
+.chat-bubble.organizer {
+  align-self: flex-end;
+  background: #EFF6FF;
+  border: 1.5px solid #BFDBFE;
+  color: #1E3A8A;
+  border-bottom-right-radius: 2px;
+}
+
+.chat-bubble.artist {
+  align-self: flex-start;
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  color: #78350F;
+  border-bottom-left-radius: 2px;
+}
+
+.chat-bubble.system {
+  align-self: center;
+  max-width: 95%;
+  background: #FAF5EE;
+  border: 1.5px dashed var(--dh-border-heritage);
+  color: var(--dh-charcoal);
+  font-size: 13.5px;
+}
+
+/* Agreement Zone Visual Gauge */
+.agreement-zone-meter {
+  background: #F3EDE4;
+  border-radius: 8px;
+  height: 10px;
+  position: relative;
+  overflow: hidden;
+  margin: 12px 0 6px;
+}
+
+.agreement-zone-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D97706 0%, #15803D 100%);
+  border-radius: 8px;
+  transition: width 400ms ease;
+}
+
+/* --------------------------------------------------------------------------
+   2. Curated Artist Gallery Cards
+   -------------------------------------------------------------------------- */
+.curated-artist-card {
+  background: #FFFDF9;
+  border: 2px solid var(--dh-border-heritage);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+  position: relative;
+}
+
+.curated-artist-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--dh-maroon);
+}
+
+.curated-artist-header {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(244, 236, 225, 0.45) 0%, transparent 100%);
+  border-bottom: 1px solid var(--dh-border-subtle);
+  position: relative;
+}
+
+.curated-artist-body {
+  padding: 18px;
+  flex: 1;
+}
+
+.curated-artist-footer {
+  padding: 14px 18px;
+  background: #FAF6EE;
+  border-top: 1px solid var(--dh-border-subtle);
+  display: flex;
+  gap: 10px;
+}
+
+/* --------------------------------------------------------------------------
+   3. Artist Approval Formal Invitation Scroll
+   -------------------------------------------------------------------------- */
+.invitation-scroll-card {
+  background: #FFFDF9;
+  border: 3px double var(--dh-maroon);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  max-width: 760px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-heritage);
+  position: relative;
+}
+
+.invitation-wax-seal {
+  width: 56px;
+  height: 56px;
+  background: radial-gradient(circle at 35% 35%, #C2410C 0%, #8F2F14 60%, #5A1A1A 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFDF9;
+  font-family: var(--font-heritage);
+  font-size: 22px;
+  box-shadow: 0 4px 10px rgba(90, 26, 26, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   4. High-Trust TrustPay Escrow Timeline
+   -------------------------------------------------------------------------- */
+.escrow-stage-track {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  margin: 32px 0 24px;
+}
+
+.escrow-stage-track::before {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  background: #E5E7EB;
+  z-index: 1;
+}
+
+.escrow-stage-node {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 140px;
+}
+
+.escrow-node-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 3px solid #D1D5DB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #6B7280;
+  margin-bottom: 8px;
+  transition: all var(--transition-normal);
+}
+
+.escrow-stage-node.completed .escrow-node-circle {
+  border-color: #15803D;
+  background: #ECFDF5;
+  color: #15803D;
+}
+
+.escrow-stage-node.current .escrow-node-circle {
+  border-color: #D97706;
+  background: #FFFBEB;
+  color: #B45309;
+  box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.2);
+}
+
+/* --------------------------------------------------------------------------
+   5. Tasteful Simulated Payment Warning Strip
+   -------------------------------------------------------------------------- */
+.simulated-payment-banner {
+  background: linear-gradient(90deg, #FFFBEB 0%, #FEF3C7 50%, #FFFBEB 100%);
+  border: 2px dashed #D97706;
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  color: #92400E;
+}

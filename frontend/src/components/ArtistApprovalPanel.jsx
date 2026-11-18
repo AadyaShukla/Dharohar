@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { getBooking, getArtists, artistApprove, artistDecline } from '../api';
 import Diya from './folk/Diya';
 import Ghungroo from './folk/Ghungroo';
-import PaisleyBorder from './folk/PaisleyBorder';
+import TextileBorder from './heritage/TextileBorder';
+import HeritageDivider from './heritage/HeritageDivider';
+import CulturalMotif from './heritage/CulturalMotif';
 
 export default function ArtistApprovalPanel({ bookingId, booking, setBooking, currentUser }) {
   const [artistsMap, setArtistsMap] = useState({});
@@ -10,6 +12,7 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
   const [error, setError] = useState(null);
   const [toast, setToast] = useState(null);
   const [actionNotice, setActionNotice] = useState(null);
+  const [counterOpen, setCounterOpen] = useState(false);
 
   useEffect(() => {
     loadArtists();
@@ -45,7 +48,7 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
 
   function showToast(msg) {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 3500);
   }
 
   async function handleApprove(artistId) {
@@ -55,7 +58,7 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
     setActionNotice(null);
     try {
       const res = await artistApprove(bookingId, artistId);
-      setActionNotice(`✓ Approval recorded for ${artistId}. Booking status is now ${res.booking_status}.`);
+      setActionNotice(`✓ Formal approval recorded for ${artistId}. Booking status is now ${res.booking_status}.`);
       await loadBookingDetails(bookingId);
     } catch (err) {
       setError(err.message);
@@ -80,11 +83,9 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
     }
   }
 
-  // Extract artists from negotiated roles
   const negotiatedRoles = booking?.negotiated_roles || {};
   const approvals = booking?.artist_approvals || {};
 
-  // Build list of artists in booking
   let allArtistsInBooking = Object.entries(negotiatedRoles)
     .filter(([_, info]) => info.artist_id)
     .map(([roleName, info]) => {
@@ -103,7 +104,6 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
       };
     });
 
-  // Role filter: ARTIST sees ONLY their own offers
   const isArtistUser = currentUser?.role === 'ARTIST';
   const artistList = isArtistUser
     ? allArtistsInBooking.filter((item) => item.artistId === currentUser.artist_id)
@@ -111,170 +111,377 @@ export default function ArtistApprovalPanel({ bookingId, booking, setBooking, cu
 
   if (!bookingId) {
     return (
-      <div className="tab-placeholder">
-        <Diya size={48} />
-        <h2 style={{ marginTop: '0.75rem' }}>No Active Booking Selected</h2>
-        <p style={{ marginTop: '0.5rem', color: '#6b7280' }}>
+      <div
+        style={{
+          maxWidth: '720px',
+          margin: '40px auto',
+          textAlign: 'center',
+          background: '#FFFDF9',
+          border: '2px dashed var(--dh-border-heritage)',
+          borderRadius: '16px',
+          padding: '48px 24px',
+        }}
+      >
+        <Diya size={48} animated />
+        <h2 style={{ fontFamily: "'Yatra One', cursive", color: '#6B1717', margin: '14px 0 8px' }}>
+          No Active Booking Invitation Selected
+        </h2>
+        <p style={{ color: '#6B5E4F', fontSize: '15px', margin: 0 }}>
           {currentUser?.role === 'ORGANIZER'
-            ? 'Please go to the Organizer Chat tab to create or negotiate an event request.'
-            : 'No active booking is currently selected for your artist profile.'}
+            ? 'Go to Organizer Chat or Demo Control Center to launch a booking negotiation.'
+            : 'Select an active booking from the top navigation bar to review offers.'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="whatsapp-panel-container">
+    <div
+      style={{
+        maxWidth: '920px',
+        margin: '0 auto',
+        padding: '24px 16px 48px',
+        fontFamily: "'Noto Sans', sans-serif",
+      }}
+    >
       {/* Toast Notification */}
-      {toast && <div className="whatsapp-toast">{toast}</div>}
+      {toast && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            background: '#1E2958',
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: '8px',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 1200,
+            fontSize: '14px',
+            fontWeight: 600,
+          }}
+        >
+          {toast}
+        </div>
+      )}
 
-      {/* Header Bar */}
-      <div className="whatsapp-header">
-        <div className="whatsapp-header-left">
-          <div className="whatsapp-avatar">🪕</div>
-          <div className="whatsapp-meta">
-            <h3>Dharohar Artist Community Desk</h3>
-            <span className="online-badge">
-              Online • {isArtistUser ? `Logged in: ${currentUser.name}` : 'Community Channel'}
+      {/* Header Status Bar */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: '#FAF6EE',
+          border: '1.5px solid #E8DCCB',
+          borderRadius: '12px',
+          padding: '14px 20px',
+          marginBottom: '24px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <CulturalMotif name="sarangi" size={28} />
+          <div>
+            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '18px', color: '#6B1717', margin: 0 }}>
+              Dharohar Artist Community Desk
+            </h3>
+            <span style={{ fontSize: '12.5px', color: '#15803D', fontWeight: 600 }}>
+              ● Verified Portal • {isArtistUser ? currentUser.name : 'All Troupe Offers'}
             </span>
           </div>
         </div>
 
-        <div className="whatsapp-header-right">
-          <span className="booking-ref-badge">Booking: #{bookingId}</span>
-          <span className={`booking-status-tag tag-${booking?.status?.toLowerCase() || 'none'}`}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '13px', color: '#6B5E4F' }}>Booking: #{bookingId.slice(0, 10)}</span>
+          <span
+            style={{
+              padding: '4px 12px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              background: '#FFFBEB',
+              color: '#B45309',
+              border: '1px solid #FDE68A',
+            }}
+          >
             {booking?.status || 'AWAITING_ARTIST_APPROVAL'}
           </span>
         </div>
       </div>
 
-      {/* Mandatory Notice */}
-      <div className="whatsapp-approval-banner">
-        ⚠️ <strong>Note:</strong> Booking is confirmed only when every artist approves. Final acceptance is a human action.
-      </div>
-
-      {error && (
-        <div className="error-banner" style={{ margin: '0.75rem 1rem' }} role="alert">
-          <strong>Backend Error: </strong> {error}
-        </div>
-      )}
-
       {actionNotice && (
         <div
-          className="action-notice"
           style={{
-            margin: '0.5rem 1rem',
-            padding: '0.75rem 1rem',
-            background: '#ecfdf5',
-            color: '#065f46',
-            borderRadius: 8,
+            background: '#ECFDF5',
+            border: '1.5px solid #A7F3D0',
+            color: '#065F46',
+            borderRadius: '10px',
+            padding: '12px 18px',
             fontWeight: 600,
+            fontSize: '14px',
+            marginBottom: '20px',
           }}
         >
           {actionNotice}
         </div>
       )}
 
-      {/* Approval Status Tracker Card */}
-      <div className="approval-status-tracker">
-        <h4>{isArtistUser ? 'Your Offer Status' : 'Artist Approval Checklist'}</h4>
-        <div className="checklist-items">
+      {error && (
+        <div
+          style={{
+            background: '#FEF2F2',
+            border: '1.5px solid #EF4444',
+            color: '#991B1B',
+            borderRadius: '10px',
+            padding: '12px 18px',
+            fontSize: '14px',
+            marginBottom: '20px',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {/* ====================================================================
+          FORMAL ROYAL INVITATION SCROLL
+          ==================================================================== */}
+      <div className="invitation-scroll-card">
+        <TextileBorder height={16} />
+
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '20px 0 12px' }}>
+          <div className="invitation-wax-seal" title="Dharohar Wax Seal of Authenticity">
+            ध
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ fontSize: '12px', letterSpacing: '2px', color: '#8D5B18', textTransform: 'uppercase', fontWeight: 'bold' }}>
+            Official Booking Invitation • कलाकार आमंत्रण पत्र
+          </div>
+          <h2
+            style={{
+              fontFamily: "'Yatra One', cursive",
+              fontSize: '32px',
+              color: '#6B1717',
+              margin: '6px 0 8px',
+            }}
+          >
+            Cultural Performance Offer
+          </h2>
+          <p style={{ fontSize: '14.5px', color: '#6B5E4F', margin: 0 }}>
+            Presented by <strong>{booking?.organizer_name || 'Event Organizer'}</strong> on behalf of Dharohar Living Heritage
+          </p>
+        </div>
+
+        <HeritageDivider motif="lotus" color="#C69214" width="80%" />
+
+        {/* Invitation Event Details Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            margin: '24px 0',
+            background: '#FAF6EE',
+            border: '1.5px solid #E8DCCB',
+            borderRadius: '12px',
+            padding: '18px',
+          }}
+        >
+          <div>
+            <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>Date &amp; Time</div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1F1A14', marginTop: '2px' }}>
+              📅 {booking?.event_date} at {booking?.event_time || '18:00'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>Performance Venue</div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1F1A14', marginTop: '2px' }}>
+              📍 {booking?.venue_address || 'City Palace Courtyard, Udaipur'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>Duration &amp; Size</div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1F1A14', marginTop: '2px' }}>
+              ⏱️ {booking?.duration_minutes || 60} mins • {booking?.group_size || 6} Artists
+            </div>
+          </div>
+        </div>
+
+        {/* Offers List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '24px 0' }}>
           {artistList.length === 0 ? (
-            <p style={{ fontSize: '1rem', color: '#6b7280' }}>
-              {isArtistUser
-                ? `No pending offers for your artist profile (${currentUser?.artist_id}) in booking #${bookingId}.`
-                : 'No artists assigned yet. Run negotiation in Organizer Chat to propose artists.'}
+            <p style={{ textAlign: 'center', color: '#6B5E4F', padding: '20px' }}>
+              No pending role assignments for your profile in booking #{bookingId}.
             </p>
           ) : (
-            artistList.map((item) => (
-              <div key={item.artistId} className="checklist-row">
-                <span className="artist-name-role">
-                  <strong>{item.artist.name}</strong> ({item.roleName})
-                </span>
-                {item.approved ? (
-                  <span className="badge-approved-done">✓ Approved</span>
-                ) : (
-                  <span className="badge-pending-wait">⏳ Pending Your Approval</span>
-                )}
-              </div>
-            ))
+            artistList.map((item) => {
+              const compensationInr = ((item.price || 0) / 100) || item.artist.min_fee || 12000;
+
+              return (
+                <div
+                  key={item.artistId}
+                  style={{
+                    background: '#FFFFFF',
+                    border: '2px solid #C4A482',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    boxShadow: 'var(--shadow-sm)',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      borderBottom: '1px solid #E8DCCB',
+                      paddingBottom: '14px',
+                      marginBottom: '14px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '13px', color: '#B45309', fontWeight: 'bold' }}>
+                        ROLE: {item.roleName}
+                      </div>
+                      <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '22px', color: '#6B1717', margin: '2px 0 0' }}>
+                        {item.artist.name}
+                      </h3>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>
+                        Guaranteed Compensation
+                      </div>
+                      <div style={{ fontFamily: "'Yatra One', cursive", fontSize: '26px', color: '#B84220' }}>
+                        ₹{compensationInr.toLocaleString('en-IN')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Escrow Milestone terms note */}
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#4B5563',
+                      lineHeight: 1.5,
+                      marginBottom: '16px',
+                    }}
+                  >
+                    🔒 <strong>TrustPay Escrow Terms:</strong> 50% advance (₹{(compensationInr * 0.5).toLocaleString('en-IN')}) will be released to your verified bank account immediately upon event check-in; the 50% balance (₹{(compensationInr * 0.5).toLocaleString('en-IN')}) releases post-performance.
+                  </div>
+
+                  {/* Simulated Voice Note Bar */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: '#FAF6EE',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      marginBottom: '18px',
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => showToast(`▶ Playing simulated voice invitation in Hindi for ${item.artist.name}...`)}
+                      style={{
+                        background: '#6B1717',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                      }}
+                    >
+                      ▶
+                    </button>
+                    <span style={{ fontSize: '12.5px', color: '#6B5E4F' }}>
+                      Simulated Voice Note (Hindi/Rajasthani) • 0:14
+                    </span>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={item.approved || loading}
+                      onClick={() => handleApprove(item.artistId)}
+                      style={{
+                        flex: '1.2',
+                        minWidth: '160px',
+                        padding: '12px 18px',
+                        fontSize: '15px',
+                        fontWeight: 'bold',
+                        backgroundColor: item.approved ? '#ECFDF5' : '#D97706',
+                        color: item.approved ? '#15803D' : '#FFFFFF',
+                        border: item.approved ? '2px solid #15803D' : '2px solid #B45309',
+                        borderRadius: '8px',
+                        cursor: item.approved ? 'default' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        boxShadow: item.approved ? 'none' : '0 4px 12px rgba(217, 119, 6, 0.3)',
+                      }}
+                    >
+                      <Ghungroo size={16} />
+                      <span>{item.approved ? '✓ Approved & Accepted' : 'Accept & Confirm Offer'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={loading || item.approved}
+                      onClick={() => {
+                        setCounterOpen(true);
+                        showToast('To propose counter terms, please speak your voice note or submit an adjustment via WhatsApp.');
+                      }}
+                      style={{
+                        flex: '1',
+                        minWidth: '130px',
+                        padding: '12px 16px',
+                        fontSize: '14.5px',
+                        fontWeight: 'bold',
+                        backgroundColor: '#FFFFFF',
+                        color: '#1E2958',
+                        border: '2px solid #1E2958',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Counter Terms
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={loading || item.approved}
+                      onClick={() => handleDecline(item.artistId)}
+                      style={{
+                        padding: '12px 16px',
+                        fontSize: '14px',
+                        backgroundColor: '#FEF2F2',
+                        color: '#991B1B',
+                        border: '1.5px solid #EF4444',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
-      </div>
-
-      <div style={{ padding: '0 1rem' }}>
-        <PaisleyBorder height={18} />
-      </div>
-
-      {/* WhatsApp Chat Bubbles Stream */}
-      <div className="whatsapp-chat-stream">
-        {artistList.map((item) => {
-          const isHindi =
-            (item.artist.languages || []).some((l) =>
-              ['hindi', 'rajasthani', 'mewari', 'marwari'].includes(l.toLowerCase())
-            ) || true;
-
-          const offerMessage = isHindi
-            ? `नमस्ते ${item.artist.name} जी! "${booking?.organizer_name || 'आयोजक'}" द्वारा दिनांक ${booking?.event_date || 'निर्धारित तिथि'} को "${item.roleName}" प्रस्तुति के लिए ₹${item.price?.toLocaleString('en-IN') || item.artist.min_fee} का प्रस्ताव भेजा गया है (अवधि: ${booking?.duration_minutes || 60} मिनट)। क्या आप इस कार्यक्रम के लिए स्वीकृति देते हैं?`
-            : `Hello ${item.artist.name}! You have received a booking proposal from "${booking?.organizer_name || 'Organizer'}" for ${item.roleName} on ${booking?.event_date || 'Date'} at ₹${item.price?.toLocaleString('en-IN') || item.artist.min_fee} (Duration: ${booking?.duration_minutes || 60} mins). Do you approve this booking?`;
-
-          return (
-            <div key={item.artistId} className="whatsapp-bubble-wrapper">
-              <div className="whatsapp-chat-bubble">
-                <div className="whatsapp-sender-label">Dharohar Booking Notification</div>
-
-                <div className="whatsapp-message-body">{offerMessage}</div>
-
-                {/* Voice Note Simulation Row */}
-                <div className="voice-note-row">
-                  <button
-                    type="button"
-                    className="btn-play-voice"
-                    onClick={() =>
-                      showToast(
-                        `▶ Playing simulated voice note (${isHindi ? 'Hindi' : 'English'}) for ${item.artist.name}...`
-                      )
-                    }
-                  >
-                    ▶
-                  </button>
-                  <div className="voice-note-track">
-                    <span className="voice-wave"></span>
-                    <span className="voice-wave tall"></span>
-                    <span className="voice-wave short"></span>
-                    <span className="voice-wave tall"></span>
-                    <span className="voice-wave"></span>
-                  </div>
-                  <span className="voice-note-label">Voice note (simulated) • 0:14</span>
-                </div>
-
-                {/* Human Action Buttons */}
-                <div className="whatsapp-action-buttons">
-                  <button
-                    type="button"
-                    className="btn-wa-approve"
-                    disabled={item.approved || loading}
-                    onClick={() => handleApprove(item.artistId)}
-                  >
-                    <Ghungroo size={14} /> {item.approved ? '✓ Approved' : 'Approve Offer'}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-wa-decline"
-                    disabled={loading}
-                    onClick={() => handleDecline(item.artistId)}
-                  >
-                    Decline
-                  </button>
-                </div>
-
-                <div className="whatsapp-timestamp">
-                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ✓✓
-                </div>
-              </div>
-            </div>
-          );
-        })}
       </div>
     </div>
   );

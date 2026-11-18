@@ -11,12 +11,19 @@ import {
   loadRazorpayScript,
 } from '../api';
 import Diya from './folk/Diya';
-import Ghungroo from './folk/Ghungroo';
-import PaisleyBorder from './folk/PaisleyBorder';
-import WarliDancers from './folk/WarliDancers';
+import CulturalMotif from './heritage/CulturalMotif';
+import FolkPattern from './heritage/FolkPattern';
+import TextileBorder from './heritage/TextileBorder';
+import AgreementCelebration from './heritage/AgreementCelebration';
 import BookingTimeline from './BookingTimeline';
 
-export default function OrganizerChat({ bookingId, setBookingId, booking, setBooking, currentUser }) {
+export default function OrganizerChat({
+  bookingId,
+  setBookingId,
+  booking,
+  setBooking,
+  currentUser,
+}) {
   // Form State
   const [organizerName, setOrganizerName] = useState(
     currentUser?.role === 'ORGANIZER' && currentUser?.name
@@ -44,6 +51,7 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
   const [chatMessages, setChatMessages] = useState([]);
   const [negotiationResult, setNegotiationResult] = useState(null);
   const [paymentProvider, setPaymentProvider] = useState('mock');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   // Load backend configuration for payment provider
   useEffect(() => {
@@ -74,6 +82,10 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
       setBooking(data);
       if (data.negotiated_roles && Object.keys(data.negotiated_roles).length > 0) {
         setNegotiationResult({ roles: data.negotiated_roles, status: data.status });
+        // Trigger celebration if negotiation succeeded into approval
+        if (data.status === 'AWAITING_ARTIST_APPROVAL' && !showCelebration) {
+          setShowCelebration(true);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -95,7 +107,6 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
     setRoles(roles.filter((_, i) => i !== index));
   }
 
-  // Format reason tokens into plain language
   function formatReason(reasonStr) {
     if (!reasonStr) return '';
     if (reasonStr.includes('DIFFERENT_ART_FORM')) {
@@ -111,12 +122,11 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
   }
 
   async function handleSendRequest(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Post new booking
       const payload = {
         organizer_name: organizerName,
         roles: roles.map((r) => ({
@@ -139,7 +149,6 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
       setBookingId(newBooking.id);
       setBooking(newBooking);
 
-      // Add user message to chat stream
       const userMsg = {
         id: Date.now(),
         sender: 'Organizer',
@@ -147,21 +156,48 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
       };
       setChatMessages((prev) => [...prev, userMsg]);
 
-      // 2. Run multi-agent negotiation
+      // Run multi-agent negotiation
       const negResult = await negotiate(newBooking.id);
       setNegotiationResult(negResult);
 
-      // Reload fresh booking state
       await loadBooking(newBooking.id);
 
-      // Add agent response message
       const agentMsg = {
         id: Date.now() + 1,
         sender: 'Organizer Agent',
-        content: `Evaluated available folk artists against budget ₹${budget}. Negotiation status: ${negResult.status}.`,
+        content: `Evaluated available folk artists against budget ₹${budget}. Multi-agent negotiation status: ${negResult.status}.`,
         negotiation: negResult,
       };
       setChatMessages((prev) => [...prev, agentMsg]);
+
+      if (negResult.status === 'AWAITING_ARTIST_APPROVAL') {
+        setShowCelebration(true);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleTriggerNegotiate() {
+    if (!bookingId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await negotiate(bookingId);
+      setNegotiationResult(res);
+      await loadBooking(bookingId);
+      const agentMsg = {
+        id: Date.now(),
+        sender: 'Organizer Agent',
+        content: `Re-evaluated negotiation rounds for booking #${bookingId}. Current status: ${res.status}.`,
+        negotiation: res,
+      };
+      setChatMessages((prev) => [...prev, agentMsg]);
+      if (res.status === 'AWAITING_ARTIST_APPROVAL') {
+        setShowCelebration(true);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -231,14 +267,12 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
     setError(null);
     try {
       if (paymentProvider === 'mock') {
-        // Mock provider: directly confirm simulated payment, do NOT load Razorpay SDK or open Checkout
         await pay(bookingId);
         await loadBooking(bookingId);
       } else {
-        // Razorpay provider: dynamically load checkout SDK and open Checkout modal
         const loaded = await loadRazorpayScript();
         if (!loaded) {
-          throw new Error('Could not load Razorpay Checkout script. Please check your network connection.');
+          throw new Error('Could not load Razorpay Checkout script. Check network connection.');
         }
 
         const orderData = await createPaymentOrder(bookingId);
@@ -256,7 +290,6 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
           handler: async function (response) {
             try {
               setLoading(true);
-              // Send verified payment signature to backend to move booking to PAID
               await verifyPaymentSignature(bookingId, {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -264,13 +297,13 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
               });
               await loadBooking(bookingId);
             } catch (vErr) {
-              setError(`Signature Verification Failed: ${vErr.message}`);
+              setError(`Payment verification failed: ${vErr.message}`);
             } finally {
               setLoading(false);
             }
           },
           prefill: {
-            name: currentUser?.name || organizerName,
+            name: organizerName,
             contact: currentUser?.phone || '9000000099',
           },
           theme: {
@@ -279,10 +312,6 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
         };
 
         const rzp = new window.Razorpay(options);
-        rzp.on('payment.failed', function (resp) {
-          setError(`Razorpay Payment Failed: ${resp.error.description}`);
-          setLoading(false);
-        });
         rzp.open();
       }
     } catch (err) {
@@ -292,322 +321,484 @@ export default function OrganizerChat({ bookingId, setBookingId, booking, setBoo
     }
   }
 
-  const isApproved = booking?.status === 'APPROVED';
+  const negotiatedRoles = booking?.negotiated_roles || negotiationResult?.roles || {};
+  const currentStatus = booking?.status || negotiationResult?.status || 'REQUESTED';
+
+  // Calculate total agreed fee
+  const totalAgreedPaise = Object.values(negotiatedRoles).reduce((acc, r) => acc + (r.price || 0), 0);
+  const totalAgreedInr = totalAgreedPaise > 0 ? totalAgreedPaise / 100 : budget;
+
+  // Calculate Agreement Gauge Percentage (Budget vs Minimum)
+  const agreementRatio = Math.min(100, Math.max(20, Math.round((totalAgreedInr / (budget || 1)) * 100)));
 
   return (
-    <div className="organizer-chat-layout">
-      {/* Top Controls & Status Bar */}
-      <div className="booking-status-header">
-        <div className="booking-meta">
-          <span className="booking-id-label">Active Booking:</span>
-          <strong>{bookingId ? `#${bookingId}` : 'None (Submit request below)'}</strong>
-        </div>
-
-        <div className="status-badge-container">
-          <span className="status-chip-label">Status:</span>
-          <span className={`status-chip status-${booking?.status?.toLowerCase() || 'none'}`}>
-            {booking?.status || 'NOT_STARTED'}
-          </span>
-        </div>
-
-        <div className="pay-action-wrapper" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-          <button
-            type="button"
-            className="btn-pay folk-btn-primary"
-            disabled={!isApproved || loading}
-            onClick={handlePay}
-            title={
-              !isApproved
-                ? 'Requires human artist approval first'
-                : paymentProvider === 'mock'
-                ? 'Deposit funds using simulated test provider'
-                : 'Deposit funds into escrow via Razorpay Checkout'
-            }
-          >
-            <Ghungroo size={15} /> {loading ? 'Processing...' : paymentProvider === 'mock' ? 'Pay (simulated)' : 'Pay Escrow Deposit'}
-          </button>
-          {paymentProvider === 'mock' && (
-            <span
-              className="simulated-payment-label"
-              style={{
-                fontSize: '0.72rem',
-                fontWeight: 600,
-                color: '#8B2500',
-                backgroundColor: '#FFF2EE',
-                border: '1px solid #FFCCBC',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                letterSpacing: '0.02em',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              SIMULATED PAYMENT (test provider, no real money)
-            </span>
-          )}
-        </div>
-      </div>
-
-      {error && (
-        <div className="error-banner" role="alert">
-          <strong>Backend Error: </strong> {error}
-        </div>
-      )}
-
-      {booking && (
-        <BookingTimeline
-          booking={booking}
-          currentUser={currentUser}
-          onRefresh={() => loadBooking(bookingId)}
+    <div
+      style={{
+        maxWidth: '1440px',
+        margin: '0 auto',
+        padding: '24px 16px 48px',
+        fontFamily: "'Noto Sans', sans-serif",
+      }}
+    >
+      {/* Celebration Modal on Agreement */}
+      {showCelebration && (
+        <AgreementCelebration
+          bookingId={bookingId}
+          finalPrice={totalAgreedInr}
+          onProceedToEscrow={handlePay}
+          onClose={() => setShowCelebration(false)}
         />
       )}
 
-      {/* Main Chat Stream */}
-      <div className="chat-stream">
-        {/* Welcome Agent Bubble */}
-        <div className="chat-bubble agent-bubble">
-          <div className="bubble-sender" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <Diya size={22} /> Organizer Desk AI Agent
+      {/* Main 3-Column AI Workspace Grid */}
+      <div className="negotiation-workspace-grid">
+        {/* ==================================================================
+            COLUMN 1: BOOKING SPECIFICATION & EVENT CONTEXT
+            ================================================================== */}
+        <aside className="negotiation-context-sidebar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <CulturalMotif name="dancer" size={26} />
+            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '18px', color: '#6B1717', margin: 0 }}>
+              Event Blueprint
+            </h3>
           </div>
-          <div className="bubble-text">
-            Welcome to Dharohar. Specify your event requirements and roles below. I will represent
-            your budget, evaluate artist constraints, and negotiate offers automatically.
-          </div>
-        </div>
 
-        {/* User Form Container inside a chat card */}
-        <div className="chat-bubble user-bubble form-bubble">
-          <div className="bubble-sender">Organizer Event Request 📝</div>
+          {bookingId ? (
+            <div>
+              <div style={{ marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid #E8DCCB' }}>
+                <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>Active Booking</div>
+                <div style={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '15px', color: '#6B1717' }}>
+                  #{bookingId}
+                </div>
+                <span
+                  style={{
+                    display: 'inline-block',
+                    marginTop: '6px',
+                    padding: '3px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11.5px',
+                    fontWeight: 'bold',
+                    backgroundColor: currentStatus === 'PAID' ? '#ECFDF5' : '#FFFBEB',
+                    color: currentStatus === 'PAID' ? '#15803D' : '#B45309',
+                    border: `1px solid ${currentStatus === 'PAID' ? '#A7F3D0' : '#FDE68A'}`,
+                  }}
+                >
+                  {currentStatus}
+                </span>
+              </div>
 
-          <form onSubmit={handleSendRequest} className="booking-form">
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Organizer / Organisation Name</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
+                <div>
+                  <span style={{ color: '#6B5E4F' }}>Organizer:</span>
+                  <div style={{ fontWeight: 600 }}>{booking?.organizer_name || organizerName}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: '#6B5E4F' }}>Event Date &amp; Time:</span>
+                  <div style={{ fontWeight: 600 }}>{booking?.event_date || eventDate} at {booking?.event_time || eventTime}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: '#6B5E4F' }}>Venue:</span>
+                  <div style={{ fontWeight: 600 }}>{booking?.venue_address || venueAddress || 'Confidential'}</div>
+                </div>
+
+                <div>
+                  <span style={{ color: '#6B5E4F' }}>Total Budget Ceiling:</span>
+                  <div style={{ fontWeight: 'bold', color: '#B84220', fontSize: '16px' }}>
+                    ₹{((booking?.budget ? booking.budget / 100 : budget) || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '20px', borderTop: '1px solid #E8DCCB', paddingTop: '14px' }}>
+                <button
+                  type="button"
+                  className="folk-btn-secondary"
+                  onClick={() => setBookingId('')}
+                  style={{ width: '100%', fontSize: '13px', padding: '6px 10px' }}
+                >
+                  + New Booking Request
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Creation Form when no booking is active */
+            <form onSubmit={handleSendRequest} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  Organizer Name
+                </label>
                 <input
                   type="text"
                   value={organizerName}
                   onChange={(e) => setOrganizerName(e.target.value)}
+                  style={{ width: '100%', padding: '6px 10px', fontSize: '13.5px', border: '1px solid #C4A482', borderRadius: '6px' }}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label>Event Date</label>
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Event Time</label>
-                <input
-                  type="time"
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <label>Venue Address</label>
-                  <span style={{ fontSize: '12px', color: '#B45309', fontWeight: 'bold' }}>
-                    🔒 Hidden from artists until payment
-                  </span>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  Event Date &amp; Time
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '6px' }}>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: '13px', border: '1px solid #C4A482', borderRadius: '6px' }}
+                    required
+                  />
+                  <input
+                    type="time"
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', fontSize: '13px', border: '1px solid #C4A482', borderRadius: '6px' }}
+                    required
+                  />
                 </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  Venue Address
+                </label>
                 <input
                   type="text"
                   value={venueAddress}
                   onChange={(e) => setVenueAddress(e.target.value)}
-                  placeholder="Exact venue address and landmark..."
+                  style={{ width: '100%', padding: '6px 10px', fontSize: '13.5px', border: '1px solid #C4A482', borderRadius: '6px' }}
                   required
                 />
               </div>
 
-              <div className="form-group">
-                <label>Total Budget (₹ INR)</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  Budget Ceiling: ₹{Number(budget).toLocaleString('en-IN')}
+                </label>
                 <input
-                  type="number"
+                  type="range"
+                  min="10000"
+                  max="60000"
+                  step="2000"
                   value={budget}
                   onChange={(e) => setBudget(Number(e.target.value))}
-                  required
+                  style={{ width: '100%', accentColor: '#B84220' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Max Distance (km)</label>
-                <input
-                  type="number"
-                  value={distanceKm}
-                  onChange={(e) => setDistanceKm(Number(e.target.value))}
-                  required
-                />
-              </div>
+              <button
+                type="submit"
+                className="folk-btn-primary"
+                disabled={loading}
+                style={{ width: '100%', padding: '10px 14px', fontSize: '14px', marginTop: '6px' }}
+              >
+                {loading ? 'Evaluating...' : '🚀 Submit & Launch AI'}
+              </button>
+            </form>
+          )}
+        </aside>
 
-              <div className="form-group">
-                <label>Duration (mins)</label>
-                <input
-                  type="number"
-                  value={durationMinutes}
-                  onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Audience / Group Size</label>
-                <input
-                  type="number"
-                  value={groupSize}
-                  onChange={(e) => setGroupSize(Number(e.target.value))}
-                  required
-                />
+        {/* ==================================================================
+            COLUMN 2: DUAL-AGENT NEGOTIATION CONVERSATION
+            ================================================================== */}
+        <main className="negotiation-chat-center">
+          {/* Header */}
+          <div className="negotiation-chat-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Diya size={28} animated />
+              <div>
+                <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '19px', color: '#6B1717', margin: 0 }}>
+                  AI Multi-Agent Negotiation Workspace
+                </h3>
+                <div style={{ fontSize: '12.5px', color: '#6B5E4F' }}>
+                  Organizer Agent 🧑💼 × Artist Representative Agent 🪕
+                </div>
               </div>
             </div>
 
-            {/* Requested Roles Subsection */}
-            <div className="roles-section">
-              <div className="roles-header">
-                <label>Requested Performance Roles</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                style={{
+                  background: '#FAF5EE',
+                  border: '1px solid #C4A482',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: '#6B1717',
+                }}
+              >
+                Booking: #{bookingId ? bookingId.slice(0, 10) : 'NEW'}
+              </span>
+
+              {bookingId && (
                 <button
                   type="button"
-                  className="btn-add-role"
-                  onClick={handleAddRole}
+                  className="folk-btn-secondary"
+                  onClick={handleTriggerNegotiate}
+                  disabled={loading}
+                  style={{ padding: '4px 10px', fontSize: '12px' }}
+                  title="Run re-negotiation cycle"
                 >
-                  + Add Role
+                  ⚡ Re-Evaluate
                 </button>
-              </div>
+              )}
+            </div>
+          </div>
 
-              {roles.map((r, idx) => (
-                <div key={idx} className="role-row">
-                  <input
-                    type="text"
-                    placeholder="Role Title (e.g. Dance group)"
-                    value={r.role}
-                    onChange={(e) => handleRoleChange(idx, 'role', e.target.value)}
-                    required
-                  />
-                  <input
-                    type="text"
-                    placeholder="Folk Art Form (e.g. Kalbelia Dance)"
-                    value={r.art_form}
-                    onChange={(e) => handleRoleChange(idx, 'art_form', e.target.value)}
-                    required
-                  />
-                  <input
-                    type="number"
-                    placeholder="Role Budget (₹)"
-                    value={r.budget}
-                    onChange={(e) => handleRoleChange(idx, 'budget', e.target.value)}
-                    required
-                  />
-                  {roles.length > 1 && (
-                    <button
-                      type="button"
-                      className="btn-remove-role"
-                      onClick={() => handleRemoveRole(idx)}
-                    >
-                      ✕
-                    </button>
-                  )}
+          {/* Chat Feed */}
+          <div className="negotiation-chat-feed">
+            {error && (
+              <div
+                style={{
+                  backgroundColor: '#FEF2F2',
+                  border: '1.5px solid #EF4444',
+                  borderRadius: '8px',
+                  padding: '10px 14px',
+                  color: '#991B1B',
+                  fontSize: '13.5px',
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Introductory Explanation if chat is empty */}
+            {chatMessages.length === 0 && !bookingId && (
+              <div className="chat-bubble system">
+                <strong>✦ Dual-Agent Negotiation Protocol Ready:</strong>
+                <p style={{ margin: '4px 0 0', lineHeight: 1.5 }}>
+                  Fill the event blueprint on the left or launch a demo scenario to see the Organizer Agent
+                  and Artist Representative negotiate fair wages in real-time.
+                </p>
+              </div>
+            )}
+
+            {/* Chat Messages */}
+            {chatMessages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`chat-bubble ${
+                  msg.sender === 'Organizer'
+                    ? 'organizer'
+                    : msg.sender.includes('Artist')
+                    ? 'artist'
+                    : 'system'
+                }`}
+              >
+                <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px', opacity: 0.8 }}>
+                  {msg.sender === 'Organizer' ? '🧑💼 Organizer Ingestion' : '🤖 ' + msg.sender}
                 </div>
-              ))}
+                <div>{msg.content}</div>
+
+                {/* If negotiation roles attached */}
+                {msg.negotiation && msg.negotiation.roles && (
+                  <div style={{ marginTop: '10px', borderTop: '1px dashed rgba(0,0,0,0.15)', paddingTop: '8px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>Evaluated Roles:</div>
+                    {Object.entries(msg.negotiation.roles).map(([rName, rInfo]) => (
+                      <div
+                        key={rName}
+                        style={{
+                          fontSize: '12.5px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginBottom: '3px',
+                        }}
+                      >
+                        <span>{rName}: {rInfo.artist_id || 'Standby Searching'}</span>
+                        <strong>₹{((rInfo.price || 0) / 100).toLocaleString('en-IN')} ({rInfo.status})</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Live Booking Negotiated Roles Output */}
+            {bookingId && Object.keys(negotiatedRoles).length > 0 && (
+              <div className="chat-bubble artist">
+                <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '4px', color: '#92400E' }}>
+                  🪕 Artist Representative Response
+                </div>
+                <p style={{ margin: '0 0 8px', fontSize: '14px' }}>
+                  Matched candidate artists against rate cards and travel distance ({distanceKm} km). All proposed artists satisfy village artisan minimums.
+                </p>
+                <div style={{ background: '#FFFFFF', borderRadius: '8px', padding: '10px', border: '1px solid #FDE68A' }}>
+                  {Object.entries(negotiatedRoles).map(([rName, info]) => (
+                    <div key={rName} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                      <span><strong>{rName}</strong>: {info.artist_id}</span>
+                      <span style={{ color: '#15803D', fontWeight: 'bold' }}>
+                        ₹{((info.price || 0) / 100).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Typing Indicator */}
+            {loading && (
+              <div className="chat-bubble system" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ animation: 'pulseSubtle 1s infinite' }}>🤖</span>
+                <span>Agents computing rate card compatibility, travel distance &amp; standby availability...</span>
+              </div>
+            )}
+          </div>
+
+          {/* Timeline Footer Component */}
+          {booking && <BookingTimeline booking={booking} />}
+        </main>
+
+        {/* ==================================================================
+            COLUMN 3: NEGOTIATION INTELLIGENCE & TELEMETRY
+            ================================================================== */}
+        <aside className="negotiation-intel-sidebar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <span style={{ fontSize: '20px' }}>🧠</span>
+            <h3 style={{ fontFamily: "'Yatra One', cursive", fontSize: '18px', color: '#6B1717', margin: 0 }}>
+              Negotiation Intel
+            </h3>
+          </div>
+
+          {/* Metric 1: Agreed vs Budget */}
+          <div style={{ background: '#FAF6EE', border: '1px solid #E8DCCB', borderRadius: '10px', padding: '14px', marginBottom: '14px' }}>
+            <div style={{ fontSize: '12px', color: '#6B5E4F', textTransform: 'uppercase' }}>Target Compensation</div>
+            <div
+              style={{
+                fontFamily: "'Yatra One', cursive",
+                fontSize: '26px',
+                color: '#B84220',
+                margin: '2px 0',
+              }}
+            >
+              ₹{totalAgreedInr.toLocaleString('en-IN')}
+            </div>
+
+            {/* Agreement Zone Meter */}
+            <div className="agreement-zone-meter">
+              <div className="agreement-zone-fill" style={{ width: `${agreementRatio}%` }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6B5E4F' }}>
+              <span>Artist Floor</span>
+              <span>{agreementRatio}% Alignment</span>
+              <span>Max Budget</span>
+            </div>
+          </div>
+
+          {/* Metric 2: Standby Candidates Substitution Checks */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#6B1717', marginBottom: '8px' }}>
+              Standby &amp; Substitution Checks
+            </div>
+
+            {Object.entries(negotiatedRoles).length === 0 ? (
+              <p style={{ fontSize: '12.5px', color: '#6B5E4F', margin: 0 }}>
+                No active substitutions. Running baseline allocation.
+              </p>
+            ) : (
+              Object.entries(negotiatedRoles).map(([rName, info]) => {
+                const needsApproval =
+                  info.status === 'STANDBY_CHECKED' ||
+                  (info.reasons && info.reasons.some((r) => r.includes('DIFFERENT_ART_FORM') || r.includes('PRICE_ABOVE')));
+
+                return (
+                  <div
+                    key={rName}
+                    style={{
+                      background: needsApproval ? '#FFFBEB' : '#FFFFFF',
+                      border: `1.5px solid ${needsApproval ? '#F59E0B' : '#E8DCCB'}`,
+                      borderRadius: '8px',
+                      padding: '10px',
+                      marginBottom: '8px',
+                      fontSize: '12.5px',
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, color: '#1F1A14' }}>{rName}</div>
+                    <div style={{ color: '#6B5E4F', marginTop: '2px' }}>
+                      Candidate: <strong>{info.artist_id || 'Searching'}</strong>
+                    </div>
+
+                    {info.reasons && info.reasons.length > 0 && (
+                      <div style={{ color: '#B45309', fontSize: '11.5px', marginTop: '4px' }}>
+                        ⚠️ {info.reasons.map(formatReason).join('; ')}
+                      </div>
+                    )}
+
+                    {needsApproval && (
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                        <button
+                          type="button"
+                          className="folk-btn-primary"
+                          onClick={() => handleApproveChange(rName, info.artist_id)}
+                          style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          className="folk-btn-secondary"
+                          onClick={() => handleRejectChange(rName)}
+                          style={{ padding: '4px 8px', fontSize: '11.5px' }}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Payment CTA Card */}
+          <div
+            style={{
+              background: '#FFFFFF',
+              border: '2px solid #C4A482',
+              borderRadius: '10px',
+              padding: '16px',
+            }}
+          >
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#6B1717', marginBottom: '6px' }}>
+              TrustPay Escrow Funding
+            </div>
+
+            {/* Tasteful Simulated Payment Warning Banner */}
+            <div
+              style={{
+                background: '#FFFBEB',
+                border: '1.5px dashed #D97706',
+                borderRadius: '6px',
+                padding: '8px',
+                fontSize: '11px',
+                color: '#92400E',
+                marginBottom: '10px',
+                lineHeight: 1.4,
+              }}
+            >
+              🔒 <strong>SIMULATED PAYMENT:</strong> Test provider active. No real credit card or bank funds are debited.
             </div>
 
             <button
-              type="submit"
-              className="btn-submit-request"
-              disabled={loading}
+              type="button"
+              className="folk-btn-primary"
+              onClick={handlePay}
+              disabled={loading || !bookingId || currentStatus === 'PAID'}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 12px rgba(184, 66, 32, 0.25)',
+                opacity: currentStatus === 'PAID' ? 0.6 : 1,
+              }}
             >
-              <Ghungroo size={16} /> {loading ? 'Evaluating & Negotiating Offers...' : 'Send Request'}
+              {currentStatus === 'PAID' ? '✓ Escrow Funded' : 'Pay (Simulated Escrow)'}
             </button>
-          </form>
-        </div>
-
-        {/* Dynamic Chat Messages History */}
-        {chatMessages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`chat-bubble ${msg.sender.includes('Agent') ? 'agent-bubble' : 'user-bubble'}`}
-          >
-            <div className="bubble-sender">
-              {msg.sender.includes('Agent') ? 'Organizer Agent 🤖' : 'Organizer 👤'}
-            </div>
-            <div className="bubble-text">{msg.content}</div>
           </div>
-        ))}
-
-        {/* Results Card Display */}
-        {negotiationResult && negotiationResult.roles && (
-          <div className="chat-bubble agent-bubble negotiation-card-bubble">
-            <div className="bubble-sender" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Diya size={20} /> Negotiation Findings & Offers
-            </div>
-            <PaisleyBorder height={18} />
-            <div className="roles-results-grid">
-              {Object.entries(negotiationResult.roles).map(([roleName, info]) => {
-                const status = info.status || 'NO_CANDIDATE';
-                const isNeedsApproval = status === 'NEEDS_ORGANIZER_APPROVAL';
-
-                return (
-                  <div key={roleName} className={`role-result-card border-${status.toLowerCase()}`}>
-                    <div className="role-card-header">
-                      <h3>{roleName}</h3>
-                      <span className={`status-badge badge-${status.toLowerCase()}`}>
-                        {status}
-                      </span>
-                    </div>
-
-                    <div className="role-card-body">
-                      <p>
-                        <strong>Artist ID:</strong> {info.artist_id || 'None available'}
-                      </p>
-                      <p>
-                        <strong>Proposed Price:</strong>{' '}
-                        {info.price ? `₹${info.price.toLocaleString('en-IN')}` : 'N/A'}
-                      </p>
-
-                      {info.reasons && info.reasons.length > 0 && (
-                        <div className="reasons-box">
-                          <strong>Details / Notes:</strong>
-                          <ul>
-                            {info.reasons.map((r, i) => (
-                              <li key={i}>{formatReason(r)}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* Approval Buttons for Flagged Standbys */}
-                      {isNeedsApproval && (
-                        <div className="approval-actions">
-                          <button
-                            type="button"
-                            className="btn-approve-change"
-                            onClick={() => handleApproveChange(roleName, info.artist_id)}
-                            disabled={loading}
-                          >
-                            Approve Change
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-reject-change"
-                            onClick={() => handleRejectChange(roleName)}
-                            disabled={loading}
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        </aside>
       </div>
     </div>
   );
