@@ -5,6 +5,7 @@ import {
   requestOtp,
   verifyOtp,
   getArtists,
+  seed,
 } from '../api';
 import { setSession } from '../auth';
 import {
@@ -117,7 +118,7 @@ function formatAuthError(err) {
   return `✖ Error: ${msg}`;
 }
 
-export default function LoginScreen({ onLoginSuccess, initialMessage }) {
+export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) {
   // Navigation & Step State: 'phone' | 'otp' | 'register'
   const [step, setStep] = useState('phone');
 
@@ -394,7 +395,18 @@ export default function LoginScreen({ onLoginSuccess, initialMessage }) {
     setSessionNotice(null);
 
     try {
-      const resOtp = await requestOtp(targetPhone);
+      let resOtp;
+      try {
+        resOtp = await requestOtp(targetPhone);
+      } catch (reqErr) {
+        // If DB was not seeded or user not found, auto-seed in demo mode and retry
+        if (reqErr.status === 404 || String(reqErr.message).includes('404')) {
+          await seed();
+          resOtp = await requestOtp(targetPhone);
+        } else {
+          throw reqErr;
+        }
+      }
       const code = resOtp.demo_otp || '123456';
       const verifyRes = await verifyOtp(targetPhone, code);
       setSession(verifyRes.access_token, verifyRes.user);
@@ -418,6 +430,27 @@ export default function LoginScreen({ onLoginSuccess, initialMessage }) {
       <div className="login-card-container">
         {/* Invisible container for Firebase reCAPTCHA */}
         <div id="recaptcha-container" ref={recaptchaContainerRef} />
+
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="folk-btn-secondary"
+            style={{
+              alignSelf: 'flex-start',
+              marginBottom: '12px',
+              padding: '6px 14px',
+              fontSize: '14px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            ← Back to Home / Explore
+          </button>
+        )}
 
         {/* Brand Header Lockup */}
         <div className="login-header-lockup">

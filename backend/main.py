@@ -366,6 +366,41 @@ def create_booking(
     }
 
 
+@app.get("/bookings")
+def list_bookings(
+    current_user: UserRow = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> List[Dict[str, Any]]:
+    """List bookings relevant to the authenticated user (ORGANIZER, ARTIST, OPERATOR)."""
+    if current_user.role == "OPERATOR":
+        bookings = db.query(BookingRow).order_by(BookingRow.created_at.desc()).limit(50).all()
+    elif current_user.role == "ORGANIZER":
+        bookings = (
+            db.query(BookingRow)
+            .filter(BookingRow.created_by_user_id == current_user.id)
+            .order_by(BookingRow.created_at.desc())
+            .limit(50)
+            .all()
+        )
+    elif current_user.role == "ARTIST":
+        all_recent = db.query(BookingRow).order_by(BookingRow.created_at.desc()).limit(50).all()
+        bookings = [
+            b for b in all_recent
+            if current_user.artist_id and current_user.artist_id in get_booking_artists(b.id, db)
+        ]
+    else:
+        bookings = db.query(BookingRow).order_by(BookingRow.created_at.desc()).limit(20).all()
+
+    return [
+        {
+            **b.to_dict(for_user=current_user),
+            "negotiated_roles": booking_store.get(b.id, {}).get("negotiated_roles", {}),
+            "artist_approvals": booking_store.get(b.id, {}).get("artist_approvals", {}),
+        }
+        for b in bookings
+    ]
+
+
 @app.post("/bookings/{booking_id}/negotiate")
 def negotiate_booking(
     booking_id: str,
@@ -1794,10 +1829,10 @@ def get_provider():
 
 @app.post("/demo/run-scenario", dependencies=[Depends(require_demo_mode)])
 def run_demo_scenario(
-    current_user: UserRow = Depends(require_role("OPERATOR")),
+    current_user: UserRow = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
-    """Execute the exact one-click demo scenario for Dec 20, 2026 (OPERATOR only in DEMO_MODE)."""
+    """Execute the exact one-click demo scenario for Dec 20, 2026 (DEMO_MODE)."""
     # 1. Reset and seed database
     seed_database(db=db)
 
@@ -2303,6 +2338,17 @@ def update_user_notification_preference(
     db.commit()
     db.refresh(current_user)
     return {"status": "ok", "user": current_user.to_dict()}
+
+
+@app.on_event("startup")
+def auto_seed_if_empty():
+    """Ensure database has baseline demo seed data if empty."""
+    from backend.database import SessionLocal, UserRow
+    with SessionLocal() as db_sess:
+        if db_sess.query(UserRow).count() == 0:
+            logger.info("Auto-seeding empty database on startup")
+            from backend.seed import seed_database
+            seed_database(db=db_sess)
 
 
 @app.on_event("startup")

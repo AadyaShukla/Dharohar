@@ -4,7 +4,7 @@
  * Handles 401 session expirations and surfaces backend error messages cleanly.
  */
 
-import { getToken, notifySessionExpired } from './auth';
+import { getToken, notifySessionExpired, setSession } from './auth';
 
 const BASE_URL = 'http://localhost:8000';
 
@@ -137,6 +137,10 @@ export async function negotiate(bookingId) {
 
 export async function getBooking(bookingId) {
   return request(`/bookings/${bookingId}`);
+}
+
+export async function getBookings() {
+  return request('/bookings');
 }
 
 export async function organizerApproveChange(bookingId, payload = {}) {
@@ -517,6 +521,24 @@ export async function verifyActionLink(token) {
   return request(`/api/actions/verify?token=${encodeURIComponent(token)}`, {
     method: 'POST',
   });
+}
+
+export async function quickLoginAs(phone) {
+  let resOtp;
+  try {
+    resOtp = await requestOtp(phone);
+  } catch (err) {
+    if (err.status === 404 || String(err.message).includes('404')) {
+      await seed();
+      resOtp = await requestOtp(phone);
+    } else {
+      throw err;
+    }
+  }
+  const code = resOtp.demo_otp || '123456';
+  const verifyRes = await verifyOtp(phone, code);
+  setSession(verifyRes.access_token, verifyRes.user);
+  return verifyRes.user;
 }
 
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LandingPage from './components/LandingPage';
 import ArtistSearchPage from './components/ArtistSearchPage';
 import OrganizerChat from './components/OrganizerChat';
 import ArtistApprovalPanel from './components/ArtistApprovalPanel';
@@ -8,15 +9,31 @@ import ArtistProfileWrapper from './components/ArtistProfileWrapper';
 import OperatorReviewQueue from './components/OperatorReviewQueue';
 import CoordinatorVouchPanel from './components/CoordinatorVouchPanel';
 import OrganizerProfileModal from './components/OrganizerProfileModal';
+import DemoControlCenter from './components/DemoControlCenter';
 import LoginScreen from './components/LoginScreen';
 import Toran from './components/folk/Toran';
 import Marigolds from './components/folk/Marigolds';
 import Diya from './components/folk/Diya';
 import PaisleyBorder from './components/folk/PaisleyBorder';
-import { seed, runDemoScenario, setLlmProvider, getLlmProvider, logoutUser } from './api';
+import {
+  seed,
+  runDemoScenario,
+  setLlmProvider,
+  getLlmProvider,
+  logoutUser,
+  getBookings,
+  quickLoginAs,
+} from './api';
 import { getUser, getToken, clearSession } from './auth';
 
 const ALL_TABS = [
+  {
+    id: 'landing',
+    label: 'Home & Vision',
+    icon: '🏠',
+    component: LandingPage,
+    roles: ['ORGANIZER', 'ARTIST', 'OPERATOR', 'COORDINATOR'],
+  },
   {
     id: 'artist_search',
     label: 'Artist Discovery & Search',
@@ -73,6 +90,34 @@ const ALL_TABS = [
     component: AuditLogView,
     roles: ['ORGANIZER', 'ARTIST', 'OPERATOR', 'COORDINATOR'],
   },
+  {
+    id: 'demo_center',
+    label: 'Demo Control Center',
+    icon: '🎮',
+    component: DemoControlCenter,
+    roles: ['ORGANIZER', 'ARTIST', 'OPERATOR', 'COORDINATOR'],
+  },
+];
+
+const GUEST_TABS = [
+  {
+    id: 'landing',
+    label: 'Home & Vision',
+    icon: '🏠',
+    component: LandingPage,
+  },
+  {
+    id: 'artist_search',
+    label: 'Artist Discovery & Search',
+    icon: '🔍',
+    component: ArtistSearchPage,
+  },
+  {
+    id: 'demo_center',
+    label: 'Demo Control Center',
+    icon: '🎮',
+    component: DemoControlCenter,
+  },
 ];
 
 export default function App() {
@@ -86,9 +131,10 @@ export default function App() {
   const [sessionNotice, setSessionNotice] = useState(null);
 
   // App Navigation & Booking State
-  const [activeTab, setActiveTab] = useState('organizer');
+  const [activeTab, setActiveTab] = useState(() => (getToken() && getUser() ? 'artist_search' : 'landing'));
   const [bookingId, setBookingId] = useState('');
   const [booking, setBooking] = useState(null);
+  const [bookingsList, setBookingsList] = useState([]);
   const [seedNotice, setSeedNotice] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [providerMode, setProviderMode] = useState('scripted');
@@ -127,6 +173,7 @@ export default function App() {
       const msg = event.detail?.message || 'Session expired, please log in again.';
       setCurrentUser(null);
       setSessionNotice(msg);
+      setActiveTab('landing');
     }
     window.addEventListener('dharohar:auth_expired', handleSessionExpired);
     return () => window.removeEventListener('dharohar:auth_expired', handleSessionExpired);
@@ -134,30 +181,47 @@ export default function App() {
 
   // Sync provider mode on mount
   useEffect(() => {
+    getLlmProvider()
+      .then((data) => {
+        if (data && data.provider) {
+          setProviderMode(data.provider);
+        }
+      })
+      .catch(() => {});
+  }, [currentUser]);
+
+  // Load recent bookings for dropdown selector
+  useEffect(() => {
     if (currentUser) {
-      getLlmProvider()
-        .then((data) => {
-          if (data && data.provider) {
-            setProviderMode(data.provider);
-          }
-        })
-        .catch(() => {});
+      loadBookingList();
     }
   }, [currentUser]);
 
-  // Compute available tabs according to logged-in user role
-  const userRole = currentUser?.role || 'ORGANIZER';
-  const visibleTabs = ALL_TABS.filter((tab) => tab.roles.includes(userRole));
-
-  // Ensure active tab is allowed for current role
-  useEffect(() => {
-    if (currentUser && visibleTabs.length > 0) {
-      const isAllowed = visibleTabs.some((t) => t.id === activeTab);
-      if (!isAllowed) {
-        setActiveTab(visibleTabs[0].id);
+  async function loadBookingList() {
+    try {
+      const res = await getBookings();
+      if (Array.isArray(res) && res.length > 0) {
+        setBookingsList(res);
+        if (!bookingId) {
+          setBookingId(res[0].id);
+        }
       }
+    } catch (_) {}
+  }
+
+  // Compute available tabs according to logged-in user role or guest mode
+  const visibleTabs = currentUser
+    ? ALL_TABS.filter((tab) => tab.roles.includes(currentUser.role))
+    : GUEST_TABS;
+
+  // Ensure active tab is allowed for current mode
+  useEffect(() => {
+    if (activeTab === 'login') return;
+    const isAllowed = visibleTabs.some((t) => t.id === activeTab);
+    if (!isAllowed) {
+      setActiveTab(visibleTabs[0]?.id || 'landing');
     }
-  }, [currentUser, userRole]);
+  }, [currentUser, activeTab]);
 
   function handleLoginSuccess(user) {
     setCurrentUser(user);
@@ -171,6 +235,7 @@ export default function App() {
     } else {
       setActiveTab('organizer');
     }
+    loadBookingList();
   }
 
   async function handleLogout() {
@@ -181,6 +246,8 @@ export default function App() {
     setCurrentUser(null);
     setBookingId('');
     setBooking(null);
+    setBookingsList([]);
+    setActiveTab('landing');
     setSessionNotice('Logged out successfully.');
   }
 
@@ -211,8 +278,23 @@ export default function App() {
     try {
       const res = await seed();
       setSeedNotice(`Database reset & seeded with ${res.count || 10} fictional folk artists.`);
+      await loadBookingList();
     } catch (err) {
       setSeedNotice(`Seed failed: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  async function handleQuickLogin(targetPhone) {
+    setIsProcessing(true);
+    setSeedNotice(null);
+    try {
+      const user = await quickLoginAs(targetPhone);
+      handleLoginSuccess(user);
+      setSeedNotice(`✓ Logged in as ${user.name} (${user.role}).`);
+    } catch (err) {
+      setSeedNotice(`Quick login failed: ${err.message}`);
     } finally {
       setIsProcessing(false);
     }
@@ -222,10 +304,15 @@ export default function App() {
     setIsProcessing(true);
     setSeedNotice(null);
     try {
+      if (!currentUser) {
+        const user = await quickLoginAs('9000000099');
+        setCurrentUser(user);
+      }
       const res = await runDemoScenario();
       setBookingId(res.booking_id);
+      await loadBookingList();
       setSeedNotice(
-        `Demo Scenario Loaded! Booking #${res.booking_id} created for Hotel Rajmahal Heritage. Switched to Organizer Chat.`
+        `✓ Demo Scenario Loaded! Booking #${res.booking_id} created for Hotel Rajmahal Heritage. Switched to Organizer Chat.`
       );
       setActiveTab('organizer');
     } catch (err) {
@@ -235,48 +322,47 @@ export default function App() {
     }
   }
 
-  // If not logged in, show Login Screen (folk theme)
-  if (!currentUser) {
-    return (
-      <div className="app-container">
-        {/* Background Animated Petals */}
-        <Marigolds />
-
-        {/* High-Contrast Stamped Disclaimer Label */}
-        <div className="simulation-banner-wrapper">
-          <div className="simulation-stamped-label" role="alert">
-            <span className="stamp-seal">★</span>
-            <span>SIMULATED DATA — NOT REAL PAYMENTS</span>
-            <span className="stamp-seal">★</span>
-          </div>
-        </div>
-
-        {/* Decorative Toran Garland */}
-        <Toran />
-
-        <LoginScreen
-          onLoginSuccess={handleLoginSuccess}
-          initialMessage={sessionNotice}
-        />
-
-        <footer className="app-footer">
-          <PaisleyBorder height={18} />
-          <p className="footer-note">
-            Dharohar • Simulated Booking & TrustPay Escrow Prototype • Authentic Folk Livelihoods
-          </p>
-        </footer>
-      </div>
+  // Active Component resolution
+  let CurrentComponent = null;
+  if (activeTab === 'login') {
+    CurrentComponent = () => (
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+        initialMessage={sessionNotice}
+        onBack={() => setActiveTab('landing')}
+      />
     );
+  } else if (activeTab === 'landing') {
+    CurrentComponent = () => (
+      <LandingPage
+        onExploreArtists={() => setActiveTab('artist_search')}
+        onStartBooking={() => setActiveTab('login')}
+        onQuickLogin={handleQuickLogin}
+        onRunDemo={handleRunDemoScenario}
+        isProcessing={isProcessing}
+      />
+    );
+  } else if (activeTab === 'demo_center') {
+    CurrentComponent = () => (
+      <DemoControlCenter
+        currentUser={currentUser}
+        onBookingSelected={(id) => {
+          setBookingId(id);
+          loadBookingList();
+        }}
+        onSwitchTab={(tab) => setActiveTab(tab)}
+      />
+    );
+  } else {
+    CurrentComponent =
+      visibleTabs.find((tab) => tab.id === activeTab)?.component || visibleTabs[0]?.component || LandingPage;
   }
 
-  const CurrentComponent =
-    visibleTabs.find((tab) => tab.id === activeTab)?.component || visibleTabs[0]?.component;
-
-  const isOperator = currentUser.role === 'OPERATOR';
+  const isOperator = currentUser?.role === 'OPERATOR';
 
   return (
     <div className="app-container">
-      {/* Background Animated Petals (Opacity 20%, behind cards) */}
+      {/* Background Animated Petals */}
       <Marigolds />
 
       {/* High-Contrast Stamped Disclaimer Label */}
@@ -294,8 +380,13 @@ export default function App() {
       {/* Main App Header */}
       <header className="app-header folk-header">
         <div className="header-left">
-          <div className="brand-lockup">
-            <Diya size={40} />
+          <div
+            className="brand-lockup"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveTab('landing')}
+            title="Return to Home / Vision"
+          >
+            <Diya size={40} animated />
             <div>
               <h1 className="brand-title">धरोहर • Dharohar</h1>
               <p className="app-tagline">
@@ -306,37 +397,89 @@ export default function App() {
         </div>
 
         <div className="header-right">
-          {/* User Profile & Role Chip */}
-          <div className="user-profile-badge folk-pill" title={`Logged in as ${currentUser.phone}`}>
-            <span className="user-role-icon">
-              {currentUser.role === 'ORGANIZER' && '🏛️'}
-              {currentUser.role === 'ARTIST' && '🪕'}
-              {currentUser.role === 'OPERATOR' && '⚙️'}
-            </span>
-            <div className="user-profile-meta">
-              <span className="user-name"><strong>{currentUser.name}</strong></span>
-              <span className="user-role-tag">{currentUser.role}</span>
-            </div>
-            {currentUser.role === 'ORGANIZER' && (
+          {/* If Logged In: Show User Profile Chip */}
+          {currentUser ? (
+            <div className="user-profile-badge folk-pill" title={`Logged in as ${currentUser.phone}`}>
+              <span className="user-role-icon">
+                {currentUser.role === 'ORGANIZER' && '🏛️'}
+                {currentUser.role === 'ARTIST' && '🪕'}
+                {currentUser.role === 'OPERATOR' && '⚙️'}
+                {currentUser.role === 'COORDINATOR' && '📜'}
+              </span>
+              <div className="user-profile-meta">
+                <span className="user-name"><strong>{currentUser.name}</strong></span>
+                <span className="user-role-tag">{currentUser.role}</span>
+              </div>
+              {currentUser.role === 'ORGANIZER' && (
+                <button
+                  type="button"
+                  className="btn-logout-small"
+                  style={{ backgroundColor: '#D97706', color: '#FFFFFF', marginRight: '4px' }}
+                  onClick={() => setIsOrgProfileOpen(true)}
+                  title="View & Edit Organization Details"
+                >
+                  🏢 Org Profile
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-logout-small"
-                style={{ backgroundColor: '#D97706', color: '#FFFFFF', marginRight: '4px' }}
-                onClick={() => setIsOrgProfileOpen(true)}
-                title="View & Edit Organization Details"
+                onClick={handleLogout}
+                title="Logout from session"
               >
-                🏢 Org Profile
+                Logout ✕
               </button>
-            )}
-            <button
-              type="button"
-              className="btn-logout-small"
-              onClick={handleLogout}
-              title="Logout from session"
-            >
-              Logout ✕
-            </button>
-          </div>
+            </div>
+          ) : (
+            /* If Guest: Show Quick Role Login or Sign In CTA */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="folk-btn-secondary"
+                style={{ fontSize: '13px', padding: '6px 12px' }}
+                onClick={() => handleQuickLogin('9000000099')}
+                title="Instant one-click demo login as Hotel Rajmahal Heritage"
+              >
+                👑 Demo Organizer
+              </button>
+              <button
+                type="button"
+                className="folk-btn-primary"
+                style={{ fontSize: '13px', padding: '6px 14px' }}
+                onClick={() => setActiveTab('login')}
+              >
+                🚀 Sign In / Register
+              </button>
+            </div>
+          )}
+
+          {/* Active Booking Dropdown Selector */}
+          {bookingsList.length > 0 && (
+            <div className="active-booking-pill folk-pill" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="pill-dot"></span>
+              <label htmlFor="booking-select" style={{ fontSize: '13px', fontWeight: 600 }}>Booking:</label>
+              <select
+                id="booking-select"
+                value={bookingId}
+                onChange={(e) => setBookingId(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  color: '#8B2500',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {bookingsList.map((b) => (
+                  <option key={b.id} value={b.id} style={{ color: '#1F1A14', background: '#FFFDF9' }}>
+                    #{b.id.slice(0, 10)} ({b.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Accessibility Controls: Text Sizing (A- / A+) & Reduce Motion */}
           <div className="accessibility-controls-group">
@@ -373,18 +516,10 @@ export default function App() {
             </button>
           </div>
 
-          {/* Active Booking Identifier */}
-          {bookingId && (
-            <div className="active-booking-pill folk-pill">
-              <span className="pill-dot"></span> Booking: <strong>#{bookingId}</strong>
-            </div>
-          )}
-
-          {/* Operator Demo Controls: Visible ONLY to OPERATOR */}
-          {isOperator && (
+          {/* Demo Controls: Provider Mode, Run Scenario, Reset DB */}
+          {(isOperator || !currentUser || currentUser?.role === 'ORGANIZER') && (
             <>
-              {/* Provider Toggle: Live AI vs Scripted */}
-              <div className="provider-toggle-group folk-toggle" title="Operator: Select LLM Provider">
+              <div className="provider-toggle-group folk-toggle" title="Select AI Negotiation Mode">
                 <span className="toggle-label">Mode:</span>
                 <button
                   type="button"
@@ -404,14 +539,14 @@ export default function App() {
                 </button>
               </div>
 
-              {/* One-Click Demo Scenario Button */}
               <button
                 type="button"
                 className="btn-demo-scenario-top folk-btn-primary"
                 onClick={handleRunDemoScenario}
                 disabled={isProcessing}
+                title="Run complete deterministic demo scenario"
               >
-                🎬 Run Demo Scenario
+                🎬 Run Demo
               </button>
 
               <button
@@ -419,6 +554,7 @@ export default function App() {
                 className="btn-seed folk-btn-secondary"
                 onClick={handleSeed}
                 disabled={isProcessing}
+                title="Reset database to baseline 10 folk artists"
               >
                 Reset DB
               </button>
@@ -439,7 +575,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Tab Bar: Painted Wooden Signboards with 24px+ Yatra One Tab Names */}
+      {/* Tab Bar: Painted Wooden Signboards */}
       <nav className="tab-navigation wooden-signboard-nav" aria-label="Main sections">
         {visibleTabs.map((tab) => (
           <button
@@ -463,10 +599,11 @@ export default function App() {
             booking={booking}
             setBooking={setBooking}
             currentUser={currentUser}
-            onRunDemoScenario={isOperator ? handleRunDemoScenario : undefined}
+            onRunDemoScenario={handleRunDemoScenario}
             onBookingCreated={(newBooking, negResult) => {
               setBookingId(newBooking.id);
               setBooking(newBooking);
+              loadBookingList();
               setActiveTab('organizer');
             }}
           />
@@ -474,7 +611,7 @@ export default function App() {
       </main>
 
       {/* Organizer Profile Modal */}
-      {currentUser.role === 'ORGANIZER' && (
+      {currentUser?.role === 'ORGANIZER' && (
         <OrganizerProfileModal
           isOpen={isOrgProfileOpen}
           onClose={() => setIsOrgProfileOpen(false)}
@@ -485,7 +622,7 @@ export default function App() {
       <footer className="app-footer">
         <PaisleyBorder height={18} />
         <p className="footer-note">
-          Dharohar • Simulated Booking & TrustPay Escrow Prototype • Authentic Folk Livelihoods
+          धरोहर • Dharohar • Simulated Booking & TrustPay Escrow Platform • Keeping Heritage Alive
         </p>
       </footer>
     </div>
