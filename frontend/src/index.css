@@ -1,0 +1,1080 @@
+/**
+ * Dharohar - Indian Folk Heritage Styling
+ */
+
+@import './theme.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background-color: var(--color-cream-paper);
+  /* Faint traditional repeating jaali / kolam pattern */
+  background-image: radial-gradient(var(--color-sand) 1.5px, transparent 1.5px),
+    radial-gradient(var(--color-sand) 1.5px, var(--color-cream-paper) 1.5px);
+  background-size: 32px 32px;
+  background-position: 0 0, 16px 16px;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Base Headings */
+h1, h2, h3, h4, .brand-title {
+  font-family: var(--font-heading);
+  color: var(--color-dark-maroon);
+  letter-spacing: 0.02em;
+}
+
+/* Main Layout Wrapper */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ==========================================================================
+   Stamped Wax / Ink Disclaimer Label
+   ========================================================================== */
+.simulation-banner-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 1rem 0.2rem;
+  z-index: 10;
+}
+
+.simulation-stamped-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-paper-light);
+  color: var(--color-vermilion);
+  border: 2px dashed var(--color-vermilion);
+  box-shadow: 0 0 0 3px var(--color-cream-paper), 0 0 0 5px rgba(200, 65, 43, 0.4);
+  padding: 0.35rem 1.25rem;
+  border-radius: 4px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  transform: rotate(-0.5deg);
+}
+
+.stamp-seal {
+  font-size: 0.9rem;
+  color: var(--color-turmeric);
+}
+
+/* ==========================================================================
+   Folk App Header
+   ========================================================================== */
+.folk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 2rem 0.5rem;
+  background: rgba(255, 253, 247, 0.92);
+  backdrop-filter: blur(4px);
+  border-bottom: 2px solid var(--color-dark-maroon);
+  position: relative;
+  z-index: 10;
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.brand-title {
+  font-size: 1.85rem;
+  color: var(--color-dark-maroon);
+  line-height: 1.1;
+  text-shadow: 1px 1px 0px rgba(232, 163, 23, 0.4);
+}
+
+.app-tagline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-terracotta);
+  margin-top: 0.2rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.folk-pill {
+  background: #FFF8E7;
+  color: var(--color-indigo);
+  border: 1.5px solid var(--color-turmeric);
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-leaf-green);
+}
+
+/* Provider Toggle */
+.folk-toggle {
+  background: #EADBBE;
+  border: 1.5px solid var(--color-dark-maroon);
+  border-radius: 6px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-dark-maroon);
+  padding: 0 0.45rem;
+  text-transform: uppercase;
+}
+
+.folk-toggle .btn-toggle {
+  background: transparent;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  padding: 0.35rem 0.7rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.folk-toggle .btn-toggle.active {
+  background: var(--color-dark-maroon);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Buttons with Ghungroo Jingle Effect */
+button:hover .ghungroo-icon {
+  animation: ghungrooJingle 0.6s ease-in-out;
+}
+
+.folk-btn-primary {
+  background: var(--color-vermilion);
+  color: #ffffff;
+  border: 2px solid var(--color-dark-maroon);
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 2px 3px 0px var(--color-dark-maroon);
+  transition: var(--transition-fast);
+}
+
+.folk-btn-primary:hover:not(:disabled) {
+  background: #B3341F;
+  transform: translateY(-1px);
+  box-shadow: 3px 4px 0px var(--color-dark-maroon);
+}
+
+.folk-btn-secondary {
+  background: var(--color-paper-light);
+  color: var(--color-dark-maroon);
+  border: 2px solid var(--color-dark-maroon);
+  padding: 0.55rem 0.95rem;
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: 2px 3px 0px var(--color-dark-maroon);
+  transition: var(--transition-fast);
+}
+
+.folk-btn-secondary:hover:not(:disabled) {
+  background: #F4E7CB;
+}
+
+.folk-notification {
+  background: #FDF3DB;
+  color: var(--color-dark-maroon);
+  border: 1.5px solid var(--color-turmeric);
+  border-radius: 8px;
+  margin: 0.5rem 2rem;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.folk-notification button {
+  background: none;
+  border: none;
+  color: var(--color-dark-maroon);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Tab Bar Styled as Painted Wooden Signboards
+   ========================================================================== */
+.wooden-signboard-nav {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 2rem 0;
+  background: transparent;
+  border-bottom: 3px solid var(--color-dark-maroon);
+  overflow-x: auto;
+  position: relative;
+  z-index: 5;
+}
+
+.wooden-tab-sign {
+  background: #EADBBE;
+  /* Wooden plank effect */
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.4) 0%,
+    transparent 40%,
+    rgba(90, 26, 26, 0.08) 100%
+  );
+  border: 2px solid var(--color-dark-maroon);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  padding: 0.75rem 1.4rem;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  color: var(--color-dark-maroon);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 2px 0 0 rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.wooden-tab-sign:hover {
+  background: #F5E8CB;
+  transform: translateY(-2px);
+}
+
+.wooden-tab-sign.active {
+  background: var(--color-paper-light);
+  color: var(--color-vermilion);
+  border-color: var(--color-dark-maroon);
+  border-top: 3px solid var(--color-vermilion);
+  transform: translateY(-3px);
+  box-shadow: 0 -2px 8px rgba(90, 26, 26, 0.15);
+}
+
+.tab-icon {
+  font-size: 1.1rem;
+}
+
+.tab-title {
+  letter-spacing: 0.02em;
+}
+
+.tab-ghungroo {
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Main Painted Paper Content Container
+   ========================================================================== */
+.folk-main-content {
+  flex: 1;
+  padding: 1.5rem 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 5;
+}
+
+/* Painted Paper Cards Common Style */
+.tab-placeholder,
+.booking-status-header,
+.chat-bubble,
+.large-status-card,
+.trustpay-actions-panel,
+.findings-panel,
+.reconciliation-panel,
+.demo-controls-box,
+.audit-header-bar,
+.timeline-container,
+.approval-status-tracker {
+  background: var(--card-bg) !important;
+  border: var(--card-border) !important;
+  border-radius: var(--card-radius) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+/* ==========================================================================
+   Organizer Chat Theming
+   ========================================================================== */
+.booking-status-header {
+  border-top: 4px solid var(--color-vermilion) !important;
+}
+
+.status-chip {
+  font-family: var(--font-heading);
+  letter-spacing: 0.06em;
+  border: 1.5px solid var(--color-dark-maroon);
+}
+
+.status-chip.status-approved {
+  background: #E8F5E9;
+  color: var(--color-leaf-green);
+  border-color: var(--color-leaf-green);
+}
+
+.status-chip.status-paid {
+  background: #E8EAF6;
+  color: var(--color-indigo);
+  border-color: var(--color-indigo);
+}
+
+.status-chip.status-closed {
+  background: #F3E5F5;
+  color: #6A1B9A;
+  border-color: #6A1B9A;
+}
+
+.status-chip.status-awaiting_artist_approval {
+  background: #FFF3E0;
+  color: var(--color-marigold);
+  border-color: var(--color-marigold);
+}
+
+.btn-pay {
+  background: var(--color-leaf-green) !important;
+  border: 2px solid var(--color-dark-maroon) !important;
+  box-shadow: 2px 3px 0px var(--color-dark-maroon);
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+}
+
+.btn-pay:hover:not(:disabled) {
+  background: #2E6037 !important;
+}
+
+.form-bubble {
+  border: 2px solid var(--color-dark-maroon) !important;
+}
+
+.bubble-sender {
+  font-family: var(--font-heading);
+  color: var(--color-dark-maroon);
+  font-size: 0.95rem;
+}
+
+.form-group label,
+.roles-header label {
+  font-family: var(--font-heading);
+  color: var(--color-dark-maroon);
+  letter-spacing: 0.02em;
+}
+
+.form-group input,
+.role-row input {
+  background: var(--color-cream-paper);
+  border: 1.5px solid var(--color-dark-maroon);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+.btn-add-role {
+  background: var(--color-turmeric) !important;
+  color: var(--color-dark-maroon) !important;
+  border: 1.5px solid var(--color-dark-maroon) !important;
+  font-family: var(--font-heading);
+}
+
+.btn-submit-request {
+  background: var(--color-indigo) !important;
+  border: 2px solid var(--color-dark-maroon) !important;
+  box-shadow: 3px 4px 0px var(--color-dark-maroon);
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+}
+
+.btn-submit-request:hover:not(:disabled) {
+  background: #151D42 !important;
+}
+
+.role-result-card {
+  border: 2px solid var(--color-dark-maroon);
+  box-shadow: 2px 3px 0px rgba(90, 26, 26, 0.15);
+}
+
+.role-result-card.border-valid {
+  border-left: 6px solid var(--color-leaf-green) !important;
+}
+
+.role-result-card.border-needs_organizer_approval {
+  border-left: 6px solid var(--color-marigold) !important;
+}
+
+.role-result-card.border-no_candidate {
+  border-left: 6px solid var(--color-vermilion) !important;
+}
+
+.status-badge {
+  font-family: var(--font-heading);
+}
+
+/* ==========================================================================
+   WhatsApp Panel Theme Adaptation
+   ========================================================================== */
+.whatsapp-panel-container {
+  border: 2px solid var(--color-dark-maroon);
+  box-shadow: var(--card-shadow);
+}
+
+.whatsapp-header {
+  background: var(--color-indigo) !important;
+  border-bottom: 2px solid var(--color-turmeric);
+}
+
+.whatsapp-avatar {
+  background: var(--color-turmeric) !important;
+}
+
+.whatsapp-approval-banner {
+  background: #FFF3CD !important;
+  color: var(--color-dark-maroon) !important;
+  border-bottom: 1.5px solid var(--color-turmeric) !important;
+}
+
+.btn-wa-approve {
+  background: var(--color-leaf-green) !important;
+  border: 1.5px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+.btn-wa-decline {
+  background: var(--color-vermilion) !important;
+  color: #ffffff !important;
+  border: 1.5px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+/* ==========================================================================
+   TrustPay Tracker Theming
+   ========================================================================== */
+.chip-value-pill {
+  font-family: var(--font-heading);
+  border: 1.5px solid var(--color-dark-maroon);
+}
+
+.btn-payout {
+  background: var(--color-indigo) !important;
+  border: 2px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+.btn-confirm-ack {
+  background: var(--color-leaf-green) !important;
+  border: 2px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+.btn-dispute-ack {
+  background: var(--color-vermilion) !important;
+  color: #ffffff !important;
+  border: 2px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+.btn-claim {
+  background: var(--color-turmeric) !important;
+  color: var(--color-dark-maroon) !important;
+  border: 2px solid var(--color-dark-maroon);
+  font-family: var(--font-heading);
+}
+
+.demo-controls-box {
+  background: #FFF8E7 !important;
+  border: 2.5px dashed var(--color-marigold) !important;
+}
+
+.demo-badge {
+  background: var(--color-vermilion) !important;
+  font-family: var(--font-heading);
+}
+
+/* ==========================================================================
+   Audit Log Timeline Theming
+   ========================================================================== */
+.timeline-marker.action-danger {
+  background: var(--color-vermilion) !important;
+  box-shadow: 0 0 0 2px var(--color-dark-maroon) !important;
+}
+
+.timeline-marker.action-success {
+  background: var(--color-leaf-green) !important;
+  box-shadow: 0 0 0 2px var(--color-dark-maroon) !important;
+}
+
+.action-badge {
+  font-family: var(--font-heading);
+  border: 1px solid var(--color-dark-maroon);
+}
+
+.action-badge.action-danger {
+  background: #FEE2E2 !important;
+  color: var(--color-vermilion) !important;
+}
+
+.action-badge.action-success {
+  background: #DCFCE7 !important;
+  color: var(--color-leaf-green) !important;
+}
+
+/* ==========================================================================
+   Login Screen & Role Selection (Folk Theme & Readability)
+   ========================================================================== */
+.login-screen-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2.5rem 1rem;
+  position: relative;
+  min-height: calc(100vh - 160px);
+}
+
+.login-warli-bg {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.login-card-container {
+  background: var(--color-card-cream);
+  border: 3px solid var(--color-border-dark);
+  border-radius: 16px;
+  box-shadow: 0 10px 32px rgba(90, 26, 26, 0.18), 0 3px 10px rgba(0, 0, 0, 0.08);
+  padding: 2.5rem 2.25rem;
+  max-width: 720px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+.login-header-lockup {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.login-brand-title {
+  font-family: var(--font-title);
+  font-size: 2.25rem;
+  color: var(--color-dark-maroon);
+  line-height: 1.1;
+  text-shadow: 1px 1px 0px rgba(232, 163, 23, 0.4);
+}
+
+.login-brand-tagline {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-terracotta);
+  margin-top: 0.25rem;
+}
+
+.login-alert-banner {
+  padding: 0.85rem 1.25rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-alert-banner.alert-warning {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1.5px solid #F59E0B;
+}
+
+.login-alert-banner.alert-danger {
+  background: #FEE2E2;
+  color: var(--color-vermilion);
+  border: 1.5px solid var(--color-vermilion);
+}
+
+.login-step-section {
+  margin: 1.5rem 0;
+}
+
+.login-step-label {
+  display: block;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--color-dark-maroon);
+  margin-bottom: 0.75rem;
+}
+
+.role-signboards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.wooden-signboard-card {
+  background: var(--color-card-bg);
+  border: 2px solid var(--color-border-dark);
+  border-radius: 10px;
+  padding: 1.1rem 0.75rem;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  min-height: 140px;
+}
+
+.wooden-signboard-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(90, 26, 26, 0.12);
+}
+
+.wooden-signboard-card.selected {
+  background: #FFFBEB;
+  border: 2.5px solid var(--color-amber-gold);
+  box-shadow: 0 0 0 3px rgba(242, 140, 40, 0.45);
+}
+
+.signboard-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.signboard-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.signboard-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.phone-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.phone-prefix {
+  display: flex;
+  align-items: center;
+  padding: 0 0.85rem;
+  background: #EADBBE;
+  border: 2px solid var(--color-border-dark);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-dark-maroon);
+}
+
+.folk-select {
+  width: 100%;
+  height: 46px;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  padding: 0.5rem 1rem;
+  border: 2px solid var(--color-border-dark);
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: var(--color-text-main);
+  outline: none;
+}
+
+.btn-send-otp {
+  white-space: nowrap;
+  min-width: 130px;
+}
+
+.simulated-otp-card {
+  background: #FFFDF5;
+  border: 2px dashed var(--color-vermilion);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: var(--color-dark-maroon);
+}
+
+.otp-card-seal {
+  font-size: 1.4rem;
+  color: var(--color-turmeric);
+}
+
+.otp-code-highlight {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: 0.25em;
+  color: var(--color-vermilion);
+  margin-top: 0.25rem;
+}
+
+.otp-form {
+  margin-top: 1rem;
+}
+
+.otp-input-field {
+  font-size: 1.6rem;
+  letter-spacing: 0.3em;
+  text-align: center;
+  font-weight: 800;
+  color: var(--color-dark-maroon);
+  height: 52px;
+}
+
+.btn-verify-login {
+  width: 100%;
+  margin-top: 1rem;
+  height: 48px;
+  font-size: 1.1rem;
+}
+
+.login-disclaimer-note {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 1.25rem 0 0.75rem;
+  font-style: italic;
+}
+
+.demo-shortcuts-panel {
+  background: #F5EBD4;
+  border: 1.5px dashed var(--color-border-dark);
+  border-radius: 10px;
+  padding: 1.1rem;
+  margin-top: 1.25rem;
+}
+
+.demo-shortcuts-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--color-dark-maroon);
+  margin-bottom: 0.65rem;
+}
+
+.demo-shortcuts-buttons {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.btn-shortcut {
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  background: #FFFFFF;
+  border: 2px solid var(--color-border-dark);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-dark-maroon);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-shortcut:hover:not(:disabled) {
+  background: #FEF3C7;
+  border-color: var(--color-amber-gold);
+  transform: translateY(-1px);
+}
+
+/* User Profile Badge in Header */
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.35rem 0.85rem;
+  background: #FFF8E7;
+  border: 2px solid var(--color-turmeric);
+  border-radius: 24px;
+}
+
+.user-role-icon {
+  font-size: 1.25rem;
+}
+
+.user-profile-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.user-name {
+  font-size: 0.95rem;
+  color: var(--color-dark-maroon);
+}
+
+.user-role-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--color-amber-gold);
+}
+
+.btn-logout-small {
+  background: #FEE2E2;
+  color: var(--color-vermilion);
+  border: 1px solid var(--color-vermilion);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-left: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.btn-logout-small:hover {
+  background: var(--color-vermilion);
+  color: #FFFFFF;
+}
+
+/* Responsive adjustment for login */
+@media (max-width: 640px) {
+  .role-signboards-grid {
+    grid-template-columns: 1fr;
+  }
+  .phone-input-row {
+    flex-direction: column;
+  }
+}
+
+.app-footer {
+  text-align: center;
+  padding: 1.5rem 2rem 2rem;
+  color: var(--color-terracotta);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.footer-note {
+  margin-top: 0.5rem;
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================================================
+   Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .tab-navigation {
+    padding: 0.5rem 1rem 0;
+  }
+
+  .wooden-tab-sign {
+    padding: 0.6rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .tab-content {
+    padding: 1rem;
+  }
+
+  .status-chips-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   User Registration & Consent Styles (Folk High-Readability)
+   ========================================================================== */
+
+.register-step-section {
+  margin: 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.verified-phone-card {
+  background: #F0FDF4;
+  border: 2px solid var(--color-leaf-green);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.verified-phone-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.verified-phone-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-leaf-green);
+}
+
+.verified-phone-number {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--color-text-main);
+  letter-spacing: 0.05em;
+}
+
+.consent-section {
+  background: #FFFFFF;
+  border: 2px solid var(--color-border-subtle);
+  border-radius: 8px;
+  padding: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.consent-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-dark-maroon);
+  margin-bottom: 0.25rem;
+}
+
+.consent-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-text-main);
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.consent-checkbox-input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-vermilion);
+  margin-top: 3px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.consent-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--color-vermilion);
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline;
+}
+
+.consent-link-btn:hover {
+  color: var(--color-dark-maroon);
+}
+
+.legal-preview-modal {
+  background: var(--color-card-cream);
+  border: 2px solid var(--color-border-dark);
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--color-text-main);
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+}
+
+.register-operator-notice {
+  background: #FEF3C7;
+  border: 1.5px solid #F59E0B;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #92400E;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-nav-link {
+  background: none;
+  border: none;
+  color: var(--color-vermilion);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0.5rem 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.auth-nav-link:hover {
+  color: var(--color-dark-maroon);
+}
+

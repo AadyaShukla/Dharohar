@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+pydantic
+sqlalchemy
+pytest
+python-dotenv
+google-genai
+anthropic
+httpx
+PyJWT
+pydantic-settings
+psycopg[binary]
+alembic
+firebase-admin
+slowapi
+python-multipart
+razorpay

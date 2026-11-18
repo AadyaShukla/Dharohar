@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+# =============================================================================
+# Dharohar Pre-Commit Hook: Secret Scan
+# Scans staged and tracked files for secrets before committing.
+# Install with: git config core.hooksPath scripts/hooks
+# =============================================================================
+
+PYTHON=""
+if [ -f "backend/venv/Scripts/python.exe" ]; then
+    PYTHON="backend/venv/Scripts/python.exe"
+elif [ -f "backend/venv/bin/python" ]; then
+    PYTHON="backend/venv/bin/python"
+elif command -v python3 >/dev/null 2>&1; then
+    PYTHON="python3"
+elif command -v python >/dev/null 2>&1; then
+    PYTHON="python"
+fi
+
+if [ -z "$PYTHON" ]; then
+    echo "Warning: Python executable not found. Skipping pre-commit secret scan."
+    exit 0
+fi
+
+echo "Running pre-commit secret scan..."
+"$PYTHON" backend/scripts/secret_scan.py
+
+SCAN_EXIT_CODE=$?
+if [ $SCAN_EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "================================================================================"
+    echo "PRE-COMMIT BLOCKED: Secrets detected in staged/tracked files!"
+    echo "Please remove the secrets, unstage with 'git reset HEAD <file>', and try again."
+    echo "================================================================================"
+    exit 1
+fi
+
+exit 0

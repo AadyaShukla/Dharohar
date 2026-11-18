@@ -1,0 +1,135 @@
+/**
+ * Dharohar Design Tokens & High-Readability Theme
+ */
+
+:root {
+  /* High-Contrast Palette */
+  --color-text-main: #1F1A14;         /* Deep ink: > 7:1 contrast on light paper */
+  --color-text-muted: #4A4035;        /* Secondary text */
+  --color-card-bg: #FFFFFF;           /* Solid white */
+  --color-card-cream: #FFF8E7;        /* Solid warm cream */
+  --color-border-dark: #5A1A1A;       /* Maroon border */
+  --color-border-subtle: #D8CEBC;     /* Subtle divider border */
+
+  /* Folk Accent Colors */
+  --color-indigo: #1F2A5C;            /* Dark indigo */
+  --color-maroon: #5A1A1A;            /* Dark maroon */
+  --color-vermilion: #C8412B;         /* Vermilion red */
+  --color-leaf-green: #2B6B38;        /* High-contrast leaf green */
+  --color-amber-gold: #B45309;        /* High-contrast amber */
+  --color-sand: #EADBBE;
+
+  /* Typography Variables */
+  --font-title: 'Yatra One', cursive, serif;
+  --font-body: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+
+  /* Text Scaling (Default 1rem / 16px) */
+  --text-base: 1rem;
+  --text-scale: 1;
+
+  /* Sizing Constraints */
+  --min-button-height: 44px;
+  --card-radius: 12px;
+  --card-border-width: 2px;
+  --card-shadow: 0 4px 12px rgba(31, 26, 20, 0.08), 2px 3px 0px rgba(90, 26, 26, 0.15);
+}
+
+/* User Scale Classes applied to root */
+html.text-scale-sm {
+  --text-scale: 0.92;
+}
+html.text-scale-md {
+  --text-scale: 1;
+}
+html.text-scale-lg {
+  --text-scale: 1.15;
+}
+html.text-scale-xl {
+  --text-scale: 1.25;
+}
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes toranSway {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(0.4deg);
+  }
+  75% {
+    transform: rotate(-0.4deg);
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes flameFlicker {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.05, 0.96) translateY(-1px);
+    opacity: 1;
+  }
+}
+
+@keyframes marigoldFall {
+  0% {
+    transform: translateY(-30px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.25;
+  }
+  85% {
+    opacity: 0.25;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ghungrooJingle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-10deg);
+  }
+  75% {
+    transform: rotate(10deg);
+  }
+}
+
+/* ==========================================================================
+   Prefers Reduced Motion & Manual Reduced Motion Toggle
+   ========================================================================== */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.001s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001s !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
