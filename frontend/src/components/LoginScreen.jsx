@@ -14,9 +14,48 @@ import {
   sendFirebasePhoneOtp,
 } from '../firebase';
 import Diya from './folk/Diya';
-import Ghungroo from './folk/Ghungroo';
-import PaisleyBorder from './folk/PaisleyBorder';
-import WarliDancers from './folk/WarliDancers';
+import FolkMandalaMotif from './shared/FolkMandalaMotif';
+import LightSaffronDivider from './shared/LightSaffronDivider';
+import './LoginScreen.css';
+
+const ROLES = [
+  {
+    id: 'ORGANIZER',
+    labelEn: 'Organizer',
+    labelHi: 'आयोजक',
+    icon: '🏛️',
+    defaultPhone: '9000000099',
+    descEn: 'Find artists and book events with protected payment',
+    descHi: 'कलाकारों को खोजें और सुरक्षित भुगतान से कार्यक्रम बुक करें',
+  },
+  {
+    id: 'ARTIST',
+    labelEn: 'Folk Artist',
+    labelHi: 'लोक कलाकार',
+    icon: '🪕',
+    defaultPhone: '9000000001',
+    descEn: 'Receive offers, approve bookings and track payouts',
+    descHi: 'प्रस्ताव प्राप्त करें, बुकिंग स्वीकार करें और भुगतान ट्रैक करें',
+  },
+  {
+    id: 'OPERATOR',
+    labelEn: 'Platform Operator',
+    labelHi: 'प्लेटफॉर्म ऑपरेटर',
+    icon: '⚙️',
+    defaultPhone: '9000000000',
+    descEn: 'Review artists, resolve disputes and monitor payments',
+    descHi: 'कलाकारों की समीक्षा करें, विवाद सुलझाएं और भुगतान ट्रैक करें',
+  },
+  {
+    id: 'COORDINATOR',
+    labelEn: 'Cultural Coordinator',
+    labelHi: 'सांस्कृतिक समन्वयक',
+    icon: '📜',
+    defaultPhone: '9000000088',
+    descEn: 'Vouch for artists you know and support onboarding',
+    descHi: 'परिचित कलाकारों का सत्यापन करें और मंच पर लाएं',
+  },
+];
 
 const FICTIONAL_ARTISTS_FALLBACK = [
   { id: 'dance_kalbelia_01', name: 'Surila Kabilo Troupe', art_form: 'Kalbelia Dance', phone: '9000000001' },
@@ -24,42 +63,9 @@ const FICTIONAL_ARTISTS_FALLBACK = [
   { id: 'dance_bhavai_03', name: 'Matka Nritya Sangeet', art_form: 'Bhavai Folk Dance', phone: '9000000003' },
   { id: 'dance_chhau_04', name: 'Purulia Mask Dancers', art_form: 'Chhau Dance', phone: '9000000004' },
   { id: 'music_manganiyar_01', name: 'Desert Sarangi Swar', art_form: 'Manganiyar Folk Music', phone: '9000000005' },
-  { id: 'music_pandavani_02', name: 'Surili Tarang Ballad', art_form: 'Manganiyar Folk Music', phone: '9000000006' },
   { id: 'music_sarangi_03', name: 'Swara Shehnai Ensemble', art_form: 'Manganiyar Folk Music', phone: '9000000007' },
   { id: 'puppet_kathputli_01', name: 'Kathputli Kaarwan', art_form: 'Kathputli Puppet Theatre', phone: '9000000008' },
-  { id: 'puppet_tholu_02', name: 'Chhaya Shadow Puppets', art_form: 'Tholu Bommalata Shadow Puppetry', phone: '9000000009' },
   { id: 'craft_bluepottery_01', name: 'Neel Mritika Clay Studio', art_form: 'Blue Pottery Craft Demonstration', phone: '9000000010' },
-];
-
-const ROLES = [
-  {
-    id: 'ORGANIZER',
-    label: 'Organizer',
-    icon: '🏛️',
-    defaultPhone: '9000000099',
-    desc: 'Create bookings, negotiate artist terms & fund escrow',
-  },
-  {
-    id: 'ARTIST',
-    label: 'Folk Artist',
-    icon: '🪕',
-    defaultPhone: '9000000005',
-    desc: 'Receive proposals, approve/decline & verify bank payouts',
-  },
-  {
-    id: 'OPERATOR',
-    label: 'Platform Operator',
-    icon: '⚙️',
-    defaultPhone: '9000000000',
-    desc: 'Settle escrow payouts, resolve tickets & run demo scenarios',
-  },
-  {
-    id: 'COORDINATOR',
-    label: 'Cultural Coordinator',
-    icon: '📜',
-    defaultPhone: '9000000088',
-    desc: 'Vouch for authenticity of folk artists & review performances',
-  },
 ];
 
 const LANGUAGES = [
@@ -67,10 +73,9 @@ const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'raj', label: 'राजस्थानी (Rajasthani)' },
   { code: 'gu', label: 'ગુજરાતી (Gujarati)' },
-  { code: 'bn', label: 'বাংলা (Bengali)' },
 ];
 
-function formatAuthError(err) {
+function formatAuthError(err, lang = 'en') {
   if (!err) return null;
   const msg = err.message || String(err);
   const code = err.code || '';
@@ -80,61 +85,76 @@ function formatAuthError(err) {
     msg.includes('invalid-verification-code') ||
     msg.includes('Invalid OTP')
   ) {
-    return '✖ Error: Invalid verification code. Please check the code and try again.';
+    return lang === 'hi'
+      ? '✖ गलत कोड: कृपया 6 अंकों का कोड जाँचें और पुनः प्रयास करें।'
+      : '✖ Error: Invalid verification code. Please check the code and try again.';
   }
   if (
     code === 'auth/code-expired' ||
     msg.includes('code-expired') ||
     msg.includes('OTP has expired')
   ) {
-    return '✖ Error: Verification code has expired. Please request a new OTP.';
+    return lang === 'hi'
+      ? '✖ कोड समाप्त हो गया है: कृपया नया ओटीपी माँगें।'
+      : '✖ Error: Verification code has expired. Please request a new OTP.';
   }
   if (
     code === 'auth/too-many-requests' ||
     msg.includes('too-many-requests') ||
     msg.includes('Rate limit exceeded') ||
-    msg.includes('Maximum verification attempts exceeded') ||
     err.status === 429
   ) {
-    return '⚠ Warning: Too many attempts. You have been temporarily rate-limited for security. Please wait a moment before trying again.';
-  }
-  if (code === 'auth/captcha-check-failed' || msg.includes('reCAPTCHA')) {
-    return '✖ Error: reCAPTCHA verification failed or cancelled. Please try sending OTP again.';
+    return lang === 'hi'
+      ? '⚠ चेतावनी: बहुत अधिक प्रयास किए गए। कृपया कुछ क्षण प्रतीक्षा करें।'
+      : '⚠ Warning: Too many attempts. Please wait a moment before trying again.';
   }
   if (code === 'auth/invalid-phone-number' || msg.includes('invalid-phone-number')) {
-    return '✖ Error: Please enter a valid 10-digit mobile number or standard phone format.';
+    return lang === 'hi'
+      ? '✖ कृपया एक मान्य 10 अंकों का मोबाइल नंबर दर्ज करें।'
+      : '✖ Error: Please enter a valid 10-digit mobile phone number.';
   }
-  if (
-    code === 'auth/network-request-failed' ||
-    msg.includes('network-request-failed') ||
-    msg.includes('Cannot connect to backend') ||
-    msg.includes('Failed to fetch')
-  ) {
-    return '✖ Error: Network connection failed. Please ensure your internet is active and the backend server is running.';
+  if (msg.includes('Cannot connect to backend') || msg.includes('Failed to fetch')) {
+    return lang === 'hi'
+      ? '✖ सर्वर से संपर्क नहीं हो सका। सुनिश्चित करें कि बैकएंड चालू है।'
+      : '✖ Error: Cannot connect to backend server. Ensure server is running on port 8000.';
   }
   if (msg.includes('OPERATOR accounts can never self-register')) {
-    return '⚠ Warning: Operator accounts are platform-managed and cannot be self-registered.';
+    return lang === 'hi'
+      ? '⚠ ऑपरेटर खाते केवल व्यवस्थापक द्वारा प्रबंधित होते हैं।'
+      : '⚠ Warning: Platform Operator accounts cannot be self-registered.';
   }
-  return `✖ Error: ${msg}`;
+  return `✖ ${msg}`;
 }
 
-export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) {
-  // Navigation & Step State: 'phone' | 'otp' | 'register'
-  const [step, setStep] = useState('phone');
+export default function LoginScreen({
+  onLoginSuccess,
+  initialMessage,
+  onBack,
+  initialMode = 'login',
+}) {
+  // Language State: 'en' | 'hi'
+  const [lang, setLang] = useState(() => localStorage.getItem('dharohar_login_lang') || 'en');
 
-  // Phone Step State
+  // Navigation / Wizard Step: 'role' | 'phone' | 'otp' | 'register'
+  const [step, setStep] = useState(initialMode === 'register' ? 'register' : 'phone');
+
+  // Role & Phone States
   const [selectedRole, setSelectedRole] = useState('ORGANIZER');
   const [phone, setPhone] = useState('9000000099');
-  const [selectedArtistId, setSelectedArtistId] = useState('music_manganiyar_01');
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const [artistsList, setArtistsList] = useState(FICTIONAL_ARTISTS_FALLBACK);
+  const [selectedArtistId, setSelectedArtistId] = useState('dance_kalbelia_01');
 
-  // OTP Verification State
+  // OTP State (6 Digits)
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const otpInput = otpDigits.join('');
+  const digitRefs = useRef([]);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [demoOtp, setDemoOtp] = useState('');
-  const [otpInput, setOtpInput] = useState('');
   const [isSimulatedAuth, setIsSimulatedAuth] = useState(false);
+  const [resendSeconds, setResendSeconds] = useState(30);
 
-  // Registration State (for un-registered users from Firebase)
+  // Registration State
   const [pendingIdToken, setPendingIdToken] = useState('');
   const [verifiedPhone, setVerifiedPhone] = useState('');
   const [regName, setRegName] = useState('');
@@ -149,16 +169,20 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
-  // General Status State
+  // Status & Environment States
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sessionNotice, setSessionNotice] = useState(initialMessage || null);
-
   const recaptchaContainerRef = useRef(null);
+
   const isDemoEnv = import.meta.env.VITE_DEMO_MODE === 'true';
 
   useEffect(() => {
-    // Attempt to load live artist profiles from backend for demo convenience
+    localStorage.setItem('dharohar_login_lang', lang);
+  }, [lang]);
+
+  // Load live artists list for demo dropdown
+  useEffect(() => {
     getArtists()
       .then((data) => {
         if (data && data.length > 0) {
@@ -176,22 +200,38 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
       .catch(() => {});
   }, []);
 
-  function handleRoleChange(roleId) {
+  // Resend OTP countdown timer
+  useEffect(() => {
+    let interval = null;
+    if (step === 'otp' && resendSeconds > 0) {
+      interval = setInterval(() => {
+        setResendSeconds((prev) => Math.max(0, prev - 1));
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [step, resendSeconds]);
+
+  // Clean phone number helper
+  const cleanPhoneDigits = phone.replace(/\D/g, '');
+  const isPhoneValid = cleanPhoneDigits.length === 10;
+  const showPhoneError = phoneTouched && cleanPhoneDigits.length > 0 && !isPhoneValid;
+
+  function handleRoleSelect(roleId) {
     setSelectedRole(roleId);
     setError(null);
     setDemoOtp('');
-    setOtpInput('');
+    setOtpDigits(['', '', '', '', '', '']);
 
-    if (roleId === 'ORGANIZER') {
-      setPhone('9000000099');
-    } else if (roleId === 'OPERATOR') {
-      setPhone('9000000000');
-    } else if (roleId === 'COORDINATOR') {
-      setPhone('9000000088');
-    } else if (roleId === 'ARTIST') {
-      const art =
-        artistsList.find((a) => a.id === selectedArtistId) || artistsList[4];
-      setPhone(art.phone);
+    const roleObj = ROLES.find((r) => r.id === roleId);
+    if (roleObj) {
+      if (roleId === 'ARTIST') {
+        const art = artistsList.find((a) => a.id === selectedArtistId) || artistsList[0];
+        setPhone(art?.phone || '9000000001');
+      } else {
+        setPhone(roleObj.defaultPhone);
+      }
     }
   }
 
@@ -202,10 +242,9 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
       setPhone(art.phone);
     }
     setDemoOtp('');
-    setOtpInput('');
+    setOtpDigits(['', '', '', '', '', '']);
   }
 
-  // Format phone to E.164 standard for Firebase
   function formatPhoneE164(raw) {
     const clean = raw.trim();
     if (clean.startsWith('+')) {
@@ -218,21 +257,29 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
     return `+${digits}`;
   }
 
-  // Step 1: Send OTP via Firebase Phone Auth (or simulated fallback)
+  // -------------------------------------------------------------------------
+  // Send OTP (Firebase Phone Auth or Simulated Fallback)
+  // -------------------------------------------------------------------------
   async function handleSendOtp(e) {
     if (e) e.preventDefault();
-    if (!phone || phone.trim().length < 6) {
-      setError('✖ Error: Please provide a valid mobile phone number.');
+    setPhoneTouched(true);
+
+    if (!isPhoneValid) {
+      setError(
+        lang === 'hi'
+          ? '✖ कृपया एक मान्य 10 अंकों का मोबाइल नंबर दर्ज करें।'
+          : '✖ Please enter a valid 10-digit mobile number.'
+      );
       return;
     }
 
     setLoading(true);
     setError(null);
     setSessionNotice(null);
+    setResendSeconds(30);
 
     const formatted = formatPhoneE164(phone);
 
-    // Try Firebase Phone Auth if configured
     if (isFirebaseConfigured()) {
       try {
         const verifier = initRecaptchaVerifier('recaptcha-container');
@@ -240,9 +287,9 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
         setConfirmationResult(confirmation);
         setIsSimulatedAuth(false);
         setStep('otp');
+        setTimeout(() => digitRefs.current[0]?.focus(), 100);
       } catch (err) {
-        console.error('Firebase Phone Auth send error:', err);
-        // If Firebase fails or quota reached and demo mode is active, allow simulated fallback
+        console.error('Firebase Auth error:', err);
         if (isDemoEnv) {
           try {
             const res = await requestOtp(phone);
@@ -251,13 +298,13 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
             setStep('otp');
             if (res.demo_otp) {
               setDemoOtp(res.demo_otp);
-              setOtpInput(res.demo_otp);
+              fillOtpDigits(res.demo_otp);
             }
           } catch (backendErr) {
-            setError(formatAuthError(backendErr));
+            setError(formatAuthError(backendErr, lang));
           }
         } else {
-          setError(formatAuthError(err));
+          setError(formatAuthError(err, lang));
         }
       } finally {
         setLoading(false);
@@ -271,36 +318,51 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
         setStep('otp');
         if (res.demo_otp) {
           setDemoOtp(res.demo_otp);
-          setOtpInput(res.demo_otp);
+          fillOtpDigits(res.demo_otp);
+        } else {
+          setTimeout(() => digitRefs.current[0]?.focus(), 100);
         }
       } catch (err) {
-        setError(formatAuthError(err));
+        setError(formatAuthError(err, lang));
       } finally {
         setLoading(false);
       }
     }
   }
 
-  // Step 2: Verify OTP -> POST /auth/session. If 404 "Not registered", transition to registration
+  function fillOtpDigits(code) {
+    const chars = String(code).split('').slice(0, 6);
+    const next = ['', '', '', '', '', ''];
+    chars.forEach((c, i) => {
+      next[i] = c;
+    });
+    setOtpDigits(next);
+  }
+
+  // -------------------------------------------------------------------------
+  // Verify OTP
+  // -------------------------------------------------------------------------
   async function handleVerifyOtp(e) {
     if (e) e.preventDefault();
     if (!otpInput || otpInput.trim().length < 4) {
-      setError('✖ Error: Please enter the verification OTP.');
+      setError(
+        lang === 'hi'
+          ? '✖ कृपया 6 अंकों का ओटीपी दर्ज करें।'
+          : '✖ Please enter the 6-digit OTP verification code.'
+      );
       return;
     }
 
     setLoading(true);
     setError(null);
 
-    // Flow A: Firebase Phone Auth
+    // Firebase flow
     if (confirmationResult && !isSimulatedAuth) {
       try {
         const userCredential = await confirmationResult.confirm(otpInput.trim());
         const idToken = await userCredential.user.getIdToken();
-        const verifiedNumber =
-          userCredential.user.phoneNumber || formatPhoneE164(phone);
+        const verifiedNumber = userCredential.user.phoneNumber || formatPhoneE164(phone);
 
-        // Call backend /auth/session
         try {
           const sessionRes = await createSession(idToken);
           setSession(sessionRes.access_token, sessionRes.user);
@@ -308,7 +370,6 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
             onLoginSuccess(sessionRes.user);
           }
         } catch (sessionErr) {
-          // If 404 "Not registered", launch registration sign-up
           if (
             sessionErr.status === 404 ||
             (sessionErr.message && sessionErr.message.includes('Not registered'))
@@ -318,18 +379,18 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
             setRegRole(selectedRole === 'OPERATOR' ? 'ORGANIZER' : selectedRole);
             setStep('register');
           } else {
-            setError(formatAuthError(sessionErr));
+            setError(formatAuthError(sessionErr, lang));
           }
         }
       } catch (fbErr) {
-        setError(formatAuthError(fbErr));
+        setError(formatAuthError(fbErr, lang));
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    // Flow B: Simulated OTP Verification
+    // Simulated flow
     try {
       const res = await verifyOtp(phone, otpInput.trim());
       setSession(res.access_token, res.user);
@@ -337,26 +398,32 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
         onLoginSuccess(res.user);
       }
     } catch (err) {
-      setError(formatAuthError(err));
+      setError(formatAuthError(err, lang));
     } finally {
       setLoading(false);
     }
   }
 
-  // Step 3: Complete Registration for new verified users -> POST /auth/register
+  // -------------------------------------------------------------------------
+  // Registration Completion
+  // -------------------------------------------------------------------------
   async function handleCompleteRegistration(e) {
     if (e) e.preventDefault();
 
     if (!regName || regName.trim().length < 2) {
-      setError('✖ Error: Please provide your full name or troupe name (at least 2 characters).');
+      setError(
+        lang === 'hi'
+          ? '✖ कृपया अपना पूरा नाम या दल का नाम दर्ज करें।'
+          : '✖ Please provide your full name or troupe name.'
+      );
       return;
     }
     if (!consentTerms || !consentPrivacy) {
-      setError('⚠ Warning: You must review and agree to both the Terms of Service and Privacy Policy.');
-      return;
-    }
-    if (regRole === 'OPERATOR') {
-      setError('⚠ Warning: Platform Operator accounts cannot be self-registered.');
+      setError(
+        lang === 'hi'
+          ? '⚠ आपको सेवा की शर्तों और गोपनीयता नीति दोनों से सहमत होना आवश्यक है।'
+          : '⚠ You must review and agree to both the Terms of Service and Privacy Policy.'
+      );
       return;
     }
 
@@ -382,13 +449,13 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
         onLoginSuccess(res.user);
       }
     } catch (err) {
-      setError(formatAuthError(err));
+      setError(formatAuthError(err, lang));
     } finally {
       setLoading(false);
     }
   }
 
-  // One-click demo login shortcut for development & judging demo
+  // Quick Demo Login Shortcut
   async function handleQuickLogin(targetPhone) {
     setLoading(true);
     setError(null);
@@ -399,7 +466,6 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
       try {
         resOtp = await requestOtp(targetPhone);
       } catch (reqErr) {
-        // If DB was not seeded or user not found, auto-seed in demo mode and retry
         if (reqErr.status === 404 || String(reqErr.message).includes('404')) {
           await seed();
           resOtp = await requestOtp(targetPhone);
@@ -414,370 +480,557 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
         onLoginSuccess(verifyRes.user);
       }
     } catch (err) {
-      setError(formatAuthError(err));
+      setError(formatAuthError(err, lang));
     } finally {
       setLoading(false);
     }
   }
 
+  // 6-Digit OTP Box Handlers
+  function handleDigitChange(idx, val) {
+    const cleaned = val.replace(/\D/g, '');
+    if (!cleaned) {
+      const next = [...otpDigits];
+      next[idx] = '';
+      setOtpDigits(next);
+      return;
+    }
+    const digit = cleaned.slice(-1);
+    const next = [...otpDigits];
+    next[idx] = digit;
+    setOtpDigits(next);
+
+    if (idx < 5) {
+      digitRefs.current[idx + 1]?.focus();
+    }
+  }
+
+  function handleDigitKeyDown(idx, e) {
+    if (e.key === 'Backspace') {
+      if (otpDigits[idx] === '' && idx > 0) {
+        const next = [...otpDigits];
+        next[idx - 1] = '';
+        setOtpDigits(next);
+        digitRefs.current[idx - 1]?.focus();
+      } else {
+        const next = [...otpDigits];
+        next[idx] = '';
+        setOtpDigits(next);
+      }
+    } else if (e.key === 'ArrowLeft' && idx > 0) {
+      digitRefs.current[idx - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && idx < 5) {
+      digitRefs.current[idx + 1]?.focus();
+    }
+  }
+
+  function handleDigitPaste(e) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const next = ['', '', '', '', '', ''];
+    for (let i = 0; i < pasted.length; i++) {
+      next[i] = pasted[i];
+    }
+    setOtpDigits(next);
+    const targetIdx = Math.min(pasted.length, 5);
+    digitRefs.current[targetIdx]?.focus();
+  }
+
   return (
-    <div className="login-screen-wrapper">
-      {/* Decorative folk background elements behind content (pointer-events: none) */}
-      <div className="login-warli-bg" aria-hidden="true">
-        <WarliDancers size={540} opacity={0.06} />
-      </div>
+    <div className="dharohar-auth-container">
+      {/* Invisible container for Firebase Phone reCAPTCHA */}
+      <div id="recaptcha-container" ref={recaptchaContainerRef} />
 
-      <div className="login-card-container">
-        {/* Invisible container for Firebase reCAPTCHA */}
-        <div id="recaptcha-container" ref={recaptchaContainerRef} />
+      {/* ====================================================================
+          LEFT PANEL (About 45% Width on Desktop, Indigo Background)
+          ==================================================================== */}
+      <aside className="dharohar-auth-left">
+        {/* Subtle folk geometric pattern overlay (10% opacity) */}
+        <div className="auth-folk-pattern-overlay" aria-hidden="true" />
 
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="folk-btn-secondary"
-            style={{
-              alignSelf: 'flex-start',
-              marginBottom: '12px',
-              padding: '6px 14px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            ← Back to Home / Explore
-          </button>
-        )}
+        {/* Slow rotating continuous mandala motif behind content (12% opacity) */}
+        <div className="auth-left-mandala" aria-hidden="true">
+          <FolkMandalaMotif size={520} />
+        </div>
 
-        {/* Brand Header Lockup */}
-        <div className="login-header-lockup">
-          <Diya size={48} animated />
-          <div>
-            <h1 className="login-brand-title">Dharohar</h1>
-            <p className="login-brand-tagline">
-              India's Traditional Folk Arts Escrow & Booking Protocol
+        {/* Content */}
+        <div className="auth-left-content">
+          <div className="auth-brand-lockup">
+            <div className="auth-brand-logo-row">
+              <Diya size={48} animated />
+              <h1 className="auth-brand-title">Dharohar</h1>
+            </div>
+            <p className="auth-brand-tagline">
+              {lang === 'hi'
+                ? 'सच्ची लोक विरासत को बुक करें। गाँव का पैसा गाँव में रहे।'
+                : 'Book authentic heritage. Keep the money in the village.'}
             </p>
+          </div>
+
+          {/* Three Short Trust Points */}
+          <div className="auth-trust-points">
+            <div className="auth-trust-point">
+              <span className="auth-trust-icon" aria-hidden="true">🪕</span>
+              <span>
+                {lang === 'hi'
+                  ? 'कलाकार प्रत्येक बुकिंग को स्वयं मंज़ूरी देते हैं'
+                  : 'Artists approve every booking'}
+              </span>
+            </div>
+
+            <div className="auth-trust-point">
+              <span className="auth-trust-icon" aria-hidden="true">⚖️</span>
+              <span>
+                {lang === 'hi'
+                  ? 'मानदेय नियमों द्वारा सुरक्षित है, अंदाजे से नहीं'
+                  : 'Prices protected by rules, not guesswork'}
+              </span>
+            </div>
+
+            <div className="auth-trust-point">
+              <span className="auth-trust-icon" aria-hidden="true">🔒</span>
+              <span>
+                {lang === 'hi'
+                  ? 'भुगतान कलाकार तक पहुँचने तक सुरक्षित ट्रैक होता है'
+                  : 'Payment tracked until it reaches the artist'}
+              </span>
+            </div>
           </div>
         </div>
 
-        <PaisleyBorder height={16} />
+        {/* Left Panel Footer Note */}
+        <div className="auth-left-footer">
+          {lang === 'hi'
+            ? 'भारतीय लोक परंपराओं का संरक्षण एवं सीधा पारदर्शी मंच।'
+            : 'Preserving India’s living cultural heritage with direct, transparent patronage.'}
+        </div>
+      </aside>
 
-        {/* High-Readability Status / Session Notices */}
-        {sessionNotice && (
-          <div className="login-alert-banner alert-warning" role="alert">
-            <span>ℹ Info:</span>
-            <span>{sessionNotice}</span>
-          </div>
-        )}
-
-        {/* High-Readability Error Banner */}
-        {error && (
-          <div className="login-alert-banner alert-danger" role="alert">
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* ----------------------------------------------------------------- */}
-        {/* STEP 1: Phone Entry & Role Selection                              */}
-        {/* ----------------------------------------------------------------- */}
-        {step === 'phone' && (
-          <div className="login-step-section">
-            <label className="login-step-label">
-              Step 1: Choose Your Community Role
-            </label>
-            <div className="role-signboards-grid" role="radiogroup">
-              {ROLES.map((r) => {
-                const isSelected = selectedRole === r.id;
-                return (
-                  <button
-                    key={r.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    className={`wooden-signboard-card ${isSelected ? 'selected' : ''}`}
-                    onClick={() => handleRoleChange(r.id)}
-                  >
-                    <span className="signboard-icon">{r.icon}</span>
-                    <span className="signboard-title">{r.label}</span>
-                    <span className="signboard-desc">{r.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Fictional Artist Selector (Demo Mode Convenience) */}
-            {selectedRole === 'ARTIST' && (
-              <div className="form-group" style={{ marginTop: '1.25rem' }}>
-                <label htmlFor="artist-select">
-                  Select Seeded Fictional Folk Artist
-                </label>
-                <select
-                  id="artist-select"
-                  className="folk-select"
-                  value={selectedArtistId}
-                  onChange={(e) => handleArtistSelect(e.target.value)}
-                >
-                  {artistsList.map((art) => (
-                    <option key={art.id} value={art.id}>
-                      {art.name} — {art.art_form} (Ph: {art.phone})
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {/* ====================================================================
+          RIGHT PANEL (White Centered Form Card)
+          ==================================================================== */}
+      <main className="dharohar-auth-right">
+        <div className="auth-form-card">
+          {/* Top Bar: Return Link & Language Switcher */}
+          <div className="auth-card-top-bar">
+            {onBack ? (
+              <button type="button" onClick={onBack} className="auth-return-link">
+                ← {lang === 'hi' ? 'मुख्य पृष्ठ' : 'Home'}
+              </button>
+            ) : (
+              <span />
             )}
 
-            {/* Step 2: Phone Input */}
-            <div className="form-group" style={{ marginTop: '1.25rem' }}>
-              <label htmlFor="login-phone">
-                Step 2: Enter Mobile Phone Number (OTP via SMS)
-              </label>
-              <div className="phone-input-row">
-                <span className="phone-prefix">+91</span>
-                <input
-                  id="login-phone"
-                  type="tel"
-                  className="folk-input"
-                  placeholder="e.g. 9876543210 or 9000000099"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  maxLength={15}
-                  required
-                />
-                <button
-                  type="button"
-                  className="folk-btn-primary btn-send-otp"
-                  onClick={handleSendOtp}
-                  disabled={loading || !phone}
-                >
-                  <Ghungroo size={14} />{' '}
-                  {loading ? '⌛ Sending...' : 'Send OTP'}
-                </button>
-              </div>
+            {/* Language Toggle */}
+            <div className="auth-lang-toggle" role="group" aria-label="Language selection">
+              <button
+                type="button"
+                className={`auth-lang-btn ${lang === 'en' ? 'active' : ''}`}
+                onClick={() => setLang('en')}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                className={`auth-lang-btn ${lang === 'hi' ? 'active' : ''}`}
+                onClick={() => setLang('hi')}
+              >
+                हिन्दी
+              </button>
             </div>
           </div>
-        )}
 
-        {/* ----------------------------------------------------------------- */}
-        {/* STEP 2: OTP Verification                                          */}
-        {/* ----------------------------------------------------------------- */}
-        {step === 'otp' && (
-          <div className="login-step-section otp-verification-step">
+          {/* Form Header */}
+          <div className="auth-card-header">
+            <h2 className="auth-card-title">
+              {step === 'register'
+                ? lang === 'hi' ? 'खाता बनाएं' : 'Create an Account'
+                : lang === 'hi' ? 'धरोहर में आपका स्वागत है' : 'Welcome to Dharohar'}
+            </h2>
+            <p className="auth-card-subline">
+              {step === 'register'
+                ? lang === 'hi' ? 'पंजीकरण पूरा करने के लिए विवरण भरें' : 'Complete your details to join'
+                : lang === 'hi' ? 'आगे बढ़ने के लिए लॉग इन करें' : 'Log in to continue'}
+            </p>
+            {/* Thin Light-Saffron Ornamental Divider (1-2px, 40% opacity) */}
+            <LightSaffronDivider />
+          </div>
+
+          {/* Step Indicator (1 Role, 2 Phone, 3 Verify) */}
+          {step !== 'register' && (
+            <div className="auth-step-indicator" role="navigation" aria-label="Sign-in steps">
+              <div className={`auth-step-pill ${step === 'phone' ? 'active' : ''}`}>
+                <span>1</span>
+                <span>{lang === 'hi' ? 'भूमिका' : 'Role'}</span>
+              </div>
+              <span className="auth-step-divider">›</span>
+              <div className={`auth-step-pill ${step === 'phone' ? 'active' : ''}`}>
+                <span>2</span>
+                <span>{lang === 'hi' ? 'फ़ोन' : 'Phone'}</span>
+              </div>
+              <span className="auth-step-divider">›</span>
+              <div className={`auth-step-pill ${step === 'otp' ? 'active' : ''}`}>
+                <span>3</span>
+                <span>{lang === 'hi' ? 'सत्यापन' : 'Verify'}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Session / Alert Banner */}
+          {sessionNotice && (
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '0.75rem',
+                backgroundColor: '#FEF3C7',
+                border: '1.5px solid #F59E0B',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '14px',
+                color: '#92400E',
+                marginBottom: '16px',
+                fontWeight: 600,
               }}
+              role="alert"
             >
-              <label className="login-step-label" style={{ marginBottom: 0 }}>
-                Step 2: Enter 6-Digit Verification Code
-              </label>
-              <button
-                type="button"
-                className="auth-nav-link"
-                onClick={() => {
-                  setStep('phone');
-                  setError(null);
-                }}
-              >
-                ← Change Number
-              </button>
+              ℹ {sessionNotice}
             </div>
+          )}
 
-            <p style={{ color: 'var(--color-text-muted)', marginBottom: '1rem' }}>
-              Verification code requested for <strong>{formatPhoneE164(phone)}</strong>.
-              {isFirebaseConfigured() && !isSimulatedAuth && (
-                <span> (SMS sent via Firebase Authentication)</span>
-              )}
-            </p>
+          {/* Error Banner */}
+          {error && (
+            <div
+              style={{
+                backgroundColor: '#FEF2F2',
+                border: '1.5px solid #EF4444',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                fontSize: '14px',
+                color: '#991B1B',
+                marginBottom: '16px',
+                fontWeight: 600,
+              }}
+              role="alert"
+            >
+              {error}
+            </div>
+          )}
 
-            {/* Simulated OTP Display Card (when simulated/demo OTP active) */}
-            {demoOtp && isSimulatedAuth && (
-              <div
-                className="simulated-otp-card"
-                role="region"
-                aria-label="Demo OTP code"
-              >
-                <span className="otp-card-seal">★</span>
-                <div>
-                  <strong>
-                    SIMULATED OTP (no SMS is sent in offline prototype):
-                  </strong>
-                  <div className="otp-code-highlight">{demoOtp}</div>
+          {/* ----------------------------------------------------------------
+              STEP 1 & 2: ROLE PICKER & PHONE INPUT
+              ---------------------------------------------------------------- */}
+          {step === 'phone' && (
+            <form onSubmit={handleSendOtp}>
+              {/* Role Picker (2x2 Grid) */}
+              <div className="auth-field-group">
+                <label className="auth-field-label">
+                  {lang === 'hi' ? '१. अपनी भूमिका चुनें:' : '1. Choose Your Role:'}
+                </label>
+
+                <div className="auth-role-grid" role="radiogroup">
+                  {ROLES.map((r) => {
+                    const isSelected = selectedRole === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        className={`auth-role-card ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleRoleSelect(r.id)}
+                      >
+                        {isSelected && <span className="auth-role-check">✓</span>}
+                        <span className="auth-role-icon">{r.icon}</span>
+                        <span className="auth-role-name">
+                          {lang === 'hi' ? r.labelHi : r.labelEn}
+                        </span>
+                        <span className="auth-role-desc">
+                          {lang === 'hi' ? r.descHi : r.descEn}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-            )}
 
-            <form onSubmit={handleVerifyOtp} className="otp-form">
-              <div className="form-group">
-                <label htmlFor="otp-input">Enter 6-Digit OTP</label>
-                <input
-                  id="otp-input"
-                  type="text"
-                  className="folk-input otp-input-field"
-                  maxLength={6}
-                  value={otpInput}
-                  onChange={(e) => setOtpInput(e.target.value)}
-                  placeholder="123456"
-                  required
-                  autoFocus
-                />
+              {/* Seeded Artist Selection (Demo Convenience) */}
+              {selectedRole === 'ARTIST' && (
+                <div className="auth-field-group">
+                  <label htmlFor="artist-select" className="auth-field-label">
+                    {lang === 'hi' ? 'कलाकार प्रोफ़ाइल चुनें:' : 'Select Artist Identity:'}
+                  </label>
+                  <select
+                    id="artist-select"
+                    value={selectedArtistId}
+                    onChange={(e) => handleArtistSelect(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '44px',
+                      padding: '0 12px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #CBD5E1',
+                      fontSize: '14.5px',
+                      backgroundColor: '#FAF8F4',
+                      color: '#1F1A14',
+                    }}
+                  >
+                    {artistsList.map((art) => (
+                      <option key={art.id} value={art.id}>
+                        {art.name} — {art.art_form}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Phone Input with +91 Prefix Attached */}
+              <div className="auth-field-group">
+                <label htmlFor="login-phone" className="auth-field-label">
+                  {lang === 'hi' ? '२. मोबाइल फ़ोन नंबर:' : '2. Mobile Phone Number:'}
+                </label>
+
+                <div className={`auth-phone-input-wrap ${showPhoneError ? 'has-error' : ''}`}>
+                  <span className="auth-phone-prefix">+91</span>
+                  <input
+                    id="login-phone"
+                    type="tel"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="9000000099"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (!phoneTouched) setPhoneTouched(true);
+                    }}
+                    onBlur={() => setPhoneTouched(true)}
+                    maxLength={15}
+                    className="auth-phone-input"
+                    required
+                  />
+                </div>
+
+                {showPhoneError ? (
+                  <div className="auth-inline-error">
+                    {lang === 'hi'
+                      ? '⚠ कृपया एक मान्य 10 अंकों का मोबाइल नंबर दर्ज करें'
+                      : '⚠ Please enter a valid 10-digit mobile number'}
+                  </div>
+                ) : (
+                  <div className="auth-field-helper">
+                    {lang === 'hi'
+                      ? 'हम आपके फ़ोन पर 6 अंकों का सत्यापन कोड भेजेंगे'
+                      : 'We will send a 6-digit code to this number'}
+                  </div>
+                )}
               </div>
 
+              {/* Solid Saffron Send OTP Button (48px height, white text) */}
               <button
                 type="submit"
-                className="folk-btn-primary btn-verify-login"
-                disabled={loading || !otpInput}
+                className="auth-primary-btn"
+                disabled={loading || !phone || showPhoneError}
               >
-                <Ghungroo size={16} />{' '}
-                {loading ? '⌛ Verifying...' : 'Verify & Enter Dharohar'}
+                {loading
+                  ? lang === 'hi' ? '⌛ कोड भेजा जा रहा है...' : '⌛ Sending OTP...'
+                  : lang === 'hi' ? 'ओटीपी भेजें (Send OTP)' : 'Send OTP'}
               </button>
+            </form>
+          )}
 
-              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          {/* ----------------------------------------------------------------
+              STEP 3: 6-DIGIT OTP VERIFICATION
+              ---------------------------------------------------------------- */}
+          {step === 'otp' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <label className="auth-field-label" style={{ margin: 0 }}>
+                  {lang === 'hi' ? '३. सत्यापन कोड दर्ज करें:' : '3. Enter 6-Digit Code:'}
+                </label>
                 <button
                   type="button"
-                  className="auth-nav-link"
-                  onClick={handleSendOtp}
-                  disabled={loading}
+                  className="auth-text-link"
+                  onClick={() => {
+                    setStep('phone');
+                    setError(null);
+                  }}
                 >
-                  ↻ Resend OTP
+                  {lang === 'hi' ? '← नंबर बदलें' : '← Change Number'}
                 </button>
               </div>
-            </form>
-          </div>
-        )}
 
-        {/* ----------------------------------------------------------------- */}
-        {/* STEP 3: New User Registration & Legal Consent                     */}
-        {/* ----------------------------------------------------------------- */}
-        {step === 'register' && (
-          <div className="register-step-section">
-            <div>
-              <h2
-                style={{
-                  fontFamily: 'var(--font-title)',
-                  fontSize: '1.75rem',
-                  color: 'var(--color-dark-maroon)',
-                  margin: '0 0 0.35rem 0',
-                }}
-              >
-                Create Your Account
-              </h2>
-              <p
-                style={{
-                  color: 'var(--color-text-muted)',
-                  fontSize: '1rem',
-                  margin: 0,
-                }}
-              >
-                Welcome to Dharohar! Your phone number is verified. Complete your
-                details below to set up your profile.
-              </p>
-            </div>
-
-            {/* Verified Phone Badge Card */}
-            <div className="verified-phone-card">
-              <div className="verified-phone-info">
-                <span className="verified-phone-badge">
-                  ✓ Phone Verified via OTP
-                </span>
-                <span className="verified-phone-number">{verifiedPhone}</span>
+              <div style={{ fontSize: '14px', color: '#64748B', marginBottom: '14px' }}>
+                {lang === 'hi' ? 'कोड भेजा गया' : 'Code sent to'}{' '}
+                <strong style={{ color: '#1F2A5C' }}>{formatPhoneE164(phone)}</strong>
               </div>
-              <button
-                type="button"
-                className="auth-nav-link"
-                onClick={() => {
-                  setStep('phone');
-                  setError(null);
-                }}
-              >
-                ← Different Phone
-              </button>
-            </div>
 
+              {/* Simulated OTP Display Box if demo mode is active */}
+              {demoOtp && isSimulatedAuth && (
+                <div
+                  style={{
+                    backgroundColor: '#FFFBEB',
+                    border: '1.5px dashed #F59E0B',
+                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <span style={{ fontSize: '13px', color: '#92400E', fontWeight: 600 }}>
+                    {lang === 'hi' ? 'सिम्युलेटेड टेस्ट कोड:' : 'Simulated Test Code:'}
+                  </span>
+                  <span style={{ fontSize: '20px', fontWeight: 900, fontFamily: 'monospace', color: '#C2410C', letterSpacing: '2px' }}>
+                    {demoOtp}
+                  </span>
+                </div>
+              )}
+
+              {/* 6 Separate Digit Boxes */}
+              <form onSubmit={handleVerifyOtp}>
+                <div className="auth-otp-row" onPaste={handleDigitPaste}>
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (digitRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleDigitKeyDown(idx, e.target)}
+                      className="auth-otp-box"
+                      autoFocus={idx === 0}
+                      aria-label={`Digit ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Resend Timer & Action */}
+                <div className="auth-resend-row">
+                  <span className="auth-resend-timer">
+                    {resendSeconds > 0
+                      ? lang === 'hi' ? `${resendSeconds}s में पुनः भेजें` : `Resend in ${resendSeconds}s`
+                      : ''}
+                  </span>
+
+                  <button
+                    type="button"
+                    className="auth-text-link"
+                    disabled={resendSeconds > 0 || loading}
+                    onClick={handleSendOtp}
+                  >
+                    ↻ {lang === 'hi' ? 'ओटीपी पुनः भेजें' : 'Resend OTP'}
+                  </button>
+                </div>
+
+                {/* Verify Button */}
+                <button
+                  type="submit"
+                  className="auth-primary-btn"
+                  style={{ marginTop: '16px' }}
+                  disabled={loading || otpInput.length < 4}
+                >
+                  {loading
+                    ? lang === 'hi' ? '⌛ सत्यापित हो रहा है...' : '⌛ Verifying...'
+                    : lang === 'hi' ? 'सत्यापित करें और प्रवेश करें' : 'Verify & Enter Dharohar'}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ----------------------------------------------------------------
+              STEP 4: REGISTRATION STEP FOR NEW USERS
+              ---------------------------------------------------------------- */}
+          {step === 'register' && (
             <form onSubmit={handleCompleteRegistration}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '13px', color: '#15803D', fontWeight: 700 }}>
+                  ✓ {verifiedPhone || formatPhoneE164(phone)} Verified
+                </span>
+                <button
+                  type="button"
+                  className="auth-text-link"
+                  onClick={() => {
+                    setStep('phone');
+                    setError(null);
+                  }}
+                >
+                  ← {lang === 'hi' ? 'लॉग इन पर वापस' : 'Back to Login'}
+                </button>
+              </div>
+
               {/* Full Name */}
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="reg-name">
-                  Full Name or Troupe Name / नाम *
+              <div className="auth-field-group">
+                <label htmlFor="reg-name" className="auth-field-label">
+                  {lang === 'hi' ? 'पूरा नाम या दल का नाम *' : 'Full Name or Troupe Name *'}
                 </label>
                 <input
                   id="reg-name"
                   type="text"
-                  className="folk-input"
-                  placeholder="e.g. Rameshwar Folk Ensemble or Vikram Rathore"
+                  placeholder="e.g. Rameshwar Folk Ensemble"
                   value={regName}
                   onChange={(e) => setRegName(e.target.value)}
-                  minLength={2}
-                  maxLength={100}
+                  style={{
+                    width: '100%',
+                    height: '46px',
+                    padding: '0 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #CBD5E1',
+                    fontSize: '15px',
+                  }}
                   required
                 />
               </div>
 
-              {/* Role Selection */}
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label className="login-step-label">
-                  Select Your Account Role *
+              {/* Account Role */}
+              <div className="auth-field-group">
+                <label className="auth-field-label">
+                  {lang === 'hi' ? 'खाता भूमिका चुनें *' : 'Choose Account Role *'}
                 </label>
-                <div
-                  className="role-signboards-grid"
-                  style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}
-                >
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <button
                     type="button"
-                    className={`wooden-signboard-card ${
-                      regRole === 'ORGANIZER' ? 'selected' : ''
-                    }`}
+                    className={`auth-role-card ${regRole === 'ORGANIZER' ? 'selected' : ''}`}
                     onClick={() => setRegRole('ORGANIZER')}
                   >
-                    <span className="signboard-icon">🏛️</span>
-                    <span className="signboard-title">Event Organizer</span>
-                    <span className="signboard-desc">
-                      Book folk artists, negotiate terms & fund escrow
-                    </span>
+                    {regRole === 'ORGANIZER' && <span className="auth-role-check">✓</span>}
+                    <span className="auth-role-icon">🏛️</span>
+                    <span className="auth-role-name">Organizer</span>
+                    <span className="auth-role-desc">Book artists with protected payment</span>
                   </button>
 
                   <button
                     type="button"
-                    className={`wooden-signboard-card ${
-                      regRole === 'ARTIST' ? 'selected' : ''
-                    }`}
+                    className={`auth-role-card ${regRole === 'ARTIST' ? 'selected' : ''}`}
                     onClick={() => setRegRole('ARTIST')}
                   >
-                    <span className="signboard-icon">🪕</span>
-                    <span className="signboard-title">Folk Artist</span>
-                    <span className="signboard-desc">
-                      Receive performance proposals & receive protected payouts
-                    </span>
+                    {regRole === 'ARTIST' && <span className="auth-role-check">✓</span>}
+                    <span className="auth-role-icon">🪕</span>
+                    <span className="auth-role-name">Folk Artist</span>
+                    <span className="auth-role-desc">Receive offers & track payouts</span>
                   </button>
-                </div>
-
-                <div
-                  className="register-operator-notice"
-                  style={{ marginTop: '0.75rem' }}
-                >
-                  <span>ℹ Info:</span>
-                  <span>
-                    Operator accounts are platform-managed and cannot be
-                    self-registered.
-                  </span>
                 </div>
               </div>
 
               {/* Language Selection */}
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label htmlFor="reg-lang">
-                  Preferred Communication Language / भाषा
+              <div className="auth-field-group">
+                <label htmlFor="reg-lang" className="auth-field-label">
+                  {lang === 'hi' ? 'संवाद भाषा' : 'Communication Language'}
                 </label>
                 <select
                   id="reg-lang"
-                  className="folk-select"
                   value={regLanguage}
                   onChange={(e) => setRegLanguage(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    padding: '0 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #CBD5E1',
+                    fontSize: '14.5px',
+                    backgroundColor: '#FAF8F4',
+                  }}
                 >
                   {LANGUAGES.map((l) => (
                     <option key={l.code} value={l.code}>
@@ -787,67 +1040,35 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
                 </select>
               </div>
 
-              {/* Organizer-Specific Profile Fields */}
+              {/* Organizer Fields */}
               {regRole === 'ORGANIZER' && (
-                <div
-                  className="organizer-registration-fields"
-                  style={{
-                    backgroundColor: 'var(--color-bg-alt, #F9F5EB)',
-                    border: '1px solid var(--color-border, #E4D9C8)',
-                    borderRadius: '8px',
-                    padding: '1rem',
-                    marginBottom: '1.25rem',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: 'var(--font-title)',
-                      fontSize: '1.15rem',
-                      color: 'var(--color-dark-maroon, #4A1525)',
-                      marginBottom: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <span>🏛️ Organization Details</span>
-                    <span
-                      style={{
-                        fontSize: '0.85rem',
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '4px',
-                        backgroundColor: '#FFF3CD',
-                        color: '#856404',
-                        fontFamily: 'var(--font-body)',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Default: UNVERIFIED
-                    </span>
+                <div style={{ backgroundColor: '#FAF8F4', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '14px', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#1F2A5C', marginBottom: '10px' }}>
+                    🏛️ Organization Details
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label htmlFor="reg-org-name">
-                      Organization / Entity Name *
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                      Organization Name *
                     </label>
                     <input
-                      id="reg-org-name"
                       type="text"
-                      className="folk-input"
-                      placeholder="e.g. Heritage Grand Palace or DPS Cultural Wing"
+                      placeholder="e.g. Heritage Grand Palace"
                       value={regOrgName}
                       onChange={(e) => setRegOrgName(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '14px' }}
                       required
                     />
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label htmlFor="reg-org-type">Organization Type *</label>
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                      Organization Type *
+                    </label>
                     <select
-                      id="reg-org-type"
-                      className="folk-select"
                       value={regOrgType}
                       onChange={(e) => setRegOrgType(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '14px' }}
                     >
                       <option value="hotel">Hotel / Heritage Resort</option>
                       <option value="school">School / University</option>
@@ -857,198 +1078,171 @@ export default function LoginScreen({ onLoginSuccess, initialMessage, onBack }) 
                     </select>
                   </div>
 
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label htmlFor="reg-work-email">Work Email Address</label>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                      Work Email
+                    </label>
                     <input
-                      id="reg-work-email"
                       type="email"
-                      className="folk-input"
-                      placeholder="e.g. events@heritagepalace.in"
+                      placeholder="events@heritagepalace.in"
                       value={regWorkEmail}
                       onChange={(e) => setRegWorkEmail(e.target.value)}
+                      style={{ width: '100%', height: '40px', padding: '0 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '14px' }}
                     />
                   </div>
-
-                  <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-                    <label htmlFor="reg-gst">GST Number (Optional)</label>
-                    <input
-                      id="reg-gst"
-                      type="text"
-                      className="folk-input"
-                      placeholder="e.g. 08AAAAA0000A1Z5"
-                      value={regGstNumber}
-                      onChange={(e) => setRegGstNumber(e.target.value.toUpperCase())}
-                      maxLength={15}
-                    />
-                  </div>
-
-                  <p
-                    style={{
-                      fontSize: '0.9rem',
-                      color: 'var(--color-text-muted, #6C5B4C)',
-                      margin: '0.5rem 0 0 0',
-                    }}
-                  >
-                    Note: Unverified organizers can browse and book up to ₹20,000. Verification by platform operators unlocks higher limits.
-                  </p>
                 </div>
               )}
 
-              {/* Legal Consent Section */}
-              <div className="consent-section">
-                <div className="consent-title">
-                  Mandatory Legal Consent & Agreements
-                </div>
-
-                <label className="consent-checkbox-label">
+              {/* Legal Consents */}
+              <div style={{ margin: '14px 0', fontSize: '13px', color: '#475569' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    className="consent-checkbox-input"
                     checked={consentTerms}
                     onChange={(e) => setConsentTerms(e.target.checked)}
                     required
-                  />
-                  <span>
-                    I have read and agree to the{' '}
-                    <button
-                      type="button"
-                      className="consent-link-btn"
-                      onClick={() => setShowTermsModal((prev) => !prev)}
-                    >
-                      Dharohar Terms of Service (v1.0)
-                    </button>
-                    , including artist protection escrow guidelines.
-                  </span>
-                </label>
-
-                {showTermsModal && (
-                  <div className="legal-preview-modal" role="region" aria-label="Terms summary">
-                    <strong>Dharohar Terms of Service v1.0 Summary:</strong>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      1. <strong>TrustPay Escrow:</strong> Organizer funds are securely held in
-                      escrow until the performance completion condition is verified.
-                    </p>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      2. <strong>Artist Rights:</strong> Folk artists retain full autonomy to
-                      accept or decline bookings. Minimum wage guarantees and fair compensation
-                      floors are strictly enforced.
-                    </p>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      3. <strong>Anti-Exploitation:</strong> Unilateral contract alterations or
-                      delayed payouts trigger automated mediation protocols.
-                    </p>
-                  </div>
-                )}
-
-                <label className="consent-checkbox-label">
-                  <input
-                    type="checkbox"
-                    className="consent-checkbox-input"
-                    checked={consentPrivacy}
-                    onChange={(e) => setConsentPrivacy(e.target.checked)}
-                    required
+                    style={{ marginTop: '2px' }}
                   />
                   <span>
                     I agree to the{' '}
                     <button
                       type="button"
-                      className="consent-link-btn"
-                      onClick={() => setShowPrivacyModal((prev) => !prev)}
+                      onClick={() => setShowTermsModal((prev) => !prev)}
+                      style={{ border: 'none', background: 'transparent', color: '#B45309', fontWeight: 700, padding: 0, textDecoration: 'underline', cursor: 'pointer' }}
                     >
-                      Dharohar Privacy Policy (v1.0)
-                    </button>{' '}
-                    and consent to necessary phone verification processing.
+                      Terms of Service (v1.0)
+                    </button>
+                  </span>
+                </label>
+
+                {showTermsModal && (
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '10px', fontSize: '12px', marginBottom: '8px' }}>
+                    <strong>Terms Summary:</strong> Guaranteed artist protection, fair compensation floors, and direct milestone payouts.
+                  </div>
+                )}
+
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={consentPrivacy}
+                    onChange={(e) => setConsentPrivacy(e.target.checked)}
+                    required
+                    style={{ marginTop: '2px' }}
+                  />
+                  <span>
+                    I agree to the{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivacyModal((prev) => !prev)}
+                      style={{ border: 'none', background: 'transparent', color: '#B45309', fontWeight: 700, padding: 0, textDecoration: 'underline', cursor: 'pointer' }}
+                    >
+                      Privacy Policy (v1.0)
+                    </button>
                   </span>
                 </label>
 
                 {showPrivacyModal && (
-                  <div className="legal-preview-modal" role="region" aria-label="Privacy summary">
-                    <strong>Dharohar Privacy Policy v1.0 Summary:</strong>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      1. <strong>Data Collection:</strong> We collect only necessary phone
-                      verification data and booking records required for transaction settlement.
-                    </p>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      2. <strong>No Third-Party Reselling:</strong> Personal identifiable data is
-                      never sold, monetized, or shared with marketing third parties.
-                    </p>
-                    <p style={{ margin: '0.4rem 0' }}>
-                      3. <strong>Audit Logs:</strong> Financial transactions are immutably logged for
-                      dispute resolution transparency.
-                    </p>
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '6px', padding: '10px', fontSize: '12px', marginTop: '6px' }}>
+                    <strong>Privacy Summary:</strong> Essential phone verification only. No data reselling or marketing sharing.
                   </div>
                 )}
               </div>
 
-              {/* Submit Button */}
+              {/* Submit Registration Button */}
               <button
                 type="submit"
-                className="folk-btn-primary btn-verify-login"
-                style={{ marginTop: '1.25rem' }}
+                className="auth-primary-btn"
                 disabled={loading || !regName || !consentTerms || !consentPrivacy}
               >
-                <Ghungroo size={16} />{' '}
-                {loading ? '⌛ Registering...' : 'Complete Registration & Enter'}
+                {loading
+                  ? lang === 'hi' ? '⌛ पंजीकरण हो रहा है...' : '⌛ Registering...'
+                  : lang === 'hi' ? 'पंजीकरण पूरा करें' : 'Complete Registration & Enter'}
               </button>
             </form>
+          )}
+
+          {/* ----------------------------------------------------------------
+              FOOTER: SWITCH LINK & FOOTER NOTE
+              ---------------------------------------------------------------- */}
+          <div className="auth-card-footer">
+            {step === 'register' ? (
+              <button
+                type="button"
+                className="auth-text-link"
+                style={{ fontSize: '14.5px', marginBottom: '8px', display: 'inline-block' }}
+                onClick={() => setStep('phone')}
+              >
+                {lang === 'hi' ? 'पहले से खाता है? लॉग इन करें' : 'Already have an account? Log in'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="auth-text-link"
+                style={{ fontSize: '14.5px', marginBottom: '8px', display: 'inline-block' }}
+                onClick={() => setStep('register')}
+              >
+                {lang === 'hi' ? 'नए हैं? खाता बनाएं' : 'New here? Create an account'}
+              </button>
+            )}
+
+            <p className="auth-footer-note">
+              {lang === 'hi'
+                ? 'लॉग इन आपके फ़ोन पर भेजे गए एकमुश्त कोड का उपयोग करता है।'
+                : 'Login uses a one-time code sent to your phone.'}
+            </p>
           </div>
-        )}
 
-        <PaisleyBorder height={16} />
+          {/* ----------------------------------------------------------------
+              PROTOTYPE CHIP & SHORTCUTS (SHOW ONLY WHEN DEMO_MODE IS TRUE)
+              ---------------------------------------------------------------- */}
+          {isDemoEnv && (
+            <div className="auth-demo-box">
+              <span className="auth-demo-badge">
+                ★ {lang === 'hi' ? 'प्रोटोटाइप: केवल परीक्षण नंबर' : 'Prototype: test numbers only'}
+              </span>
 
-        {/* Footnote Notice */}
-        <p className="login-disclaimer-note">
-          Production authentication secured by Firebase Phone OTP and TrustPay. All seeded demo
-          accounts are fictional.
-        </p>
-
-        {/* Demo Shortcuts: One-click instant bypass in demo mode */}
-        {isDemoEnv && (
-          <div className="demo-shortcuts-panel">
-            <div className="demo-shortcuts-title">
-              ⚡ Demo Shortcuts (One-Click Instant Testing)
+              <div className="auth-demo-btn-grid">
+                <button
+                  type="button"
+                  className="auth-demo-btn"
+                  onClick={() => handleQuickLogin('9000000099')}
+                  disabled={loading}
+                  title="Organizer: Hotel Rajmahal Heritage"
+                >
+                  🏛️ Organizer (9000000099)
+                </button>
+                <button
+                  type="button"
+                  className="auth-demo-btn"
+                  onClick={() => handleQuickLogin('9000000001')}
+                  disabled={loading}
+                  title="Folk Artist: Surila Kabilo Troupe"
+                >
+                  🪕 Folk Artist (9000000001)
+                </button>
+                <button
+                  type="button"
+                  className="auth-demo-btn"
+                  onClick={() => handleQuickLogin('9000000000')}
+                  disabled={loading}
+                  title="Platform Operator"
+                >
+                  ⚙️ Operator (9000000000)
+                </button>
+                <button
+                  type="button"
+                  className="auth-demo-btn"
+                  onClick={() => handleQuickLogin('9000000088')}
+                  disabled={loading}
+                  title="Cultural Coordinator"
+                >
+                  📜 Coordinator (9000000088)
+                </button>
+              </div>
             </div>
-            <div className="demo-shortcuts-buttons">
-              <button
-                type="button"
-                className="btn-shortcut"
-                onClick={() => handleQuickLogin('9000000099')}
-                disabled={loading}
-                title="Hotel Rajmahal Heritage (fictional) - Organizer"
-              >
-                👑 Login as Organizer
-              </button>
-              <button
-                type="button"
-                className="btn-shortcut"
-                onClick={() => handleQuickLogin('9000000005')}
-                disabled={loading}
-                title="Desert Sarangi Swar - Manganiyar Folk Musician"
-              >
-                🪕 Login as Artist
-              </button>
-              <button
-                type="button"
-                className="btn-shortcut"
-                onClick={() => handleQuickLogin('9000000000')}
-                disabled={loading}
-                title="Dharohar Operator (demo) - Platform Operator"
-              >
-                ⚙️ Login as Operator
-              </button>
-              <button
-                type="button"
-                className="btn-shortcut"
-                onClick={() => handleQuickLogin('9000000088')}
-                disabled={loading}
-                title="Smt. Sharda Devi (Cultural Coordinator)"
-              >
-                📜 Login as Coordinator
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 }

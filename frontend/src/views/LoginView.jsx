@@ -1,15 +1,17 @@
 import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import LoginScreen from '../components/LoginScreen';
 
 export default function LoginView() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectParam = searchParams.get('redirect');
 
+  const isRegister = location.pathname.includes('/register');
+
   function handleLoginSuccess(user) {
     if (redirectParam && redirectParam.startsWith('/')) {
-      // Validate role for destination
       if (redirectParam.startsWith('/organizer') && user.role === 'ORGANIZER') {
         navigate(redirectParam);
         return;
@@ -24,7 +26,6 @@ export default function LoginView() {
       }
     }
 
-    // Role-based redirection
     if (user.role === 'ORGANIZER') {
       navigate('/organizer');
     } else if (user.role === 'ARTIST') {
@@ -39,29 +40,10 @@ export default function LoginView() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#FAF8F4', padding: '24px 16px' }}>
-      <div style={{ maxWidth: '980px', margin: '0 auto' }}>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: '#C2410C',
-            fontSize: '15px',
-            fontWeight: 700,
-            cursor: 'pointer',
-            marginBottom: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          ← Return to Dharohar Home
-        </button>
-
-        <LoginScreen onLoginSuccess={handleLoginSuccess} />
-      </div>
-    </div>
+    <LoginScreen
+      onLoginSuccess={handleLoginSuccess}
+      onBack={() => navigate('/')}
+      initialMode={isRegister ? 'register' : 'login'}
+    />
   );
 }
